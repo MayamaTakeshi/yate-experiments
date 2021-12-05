@@ -1,0 +1,62 @@
+2021/12/05 takeshi:
+
+node.js crashes within pjsip:
+
+takeshi:yate-experiments$ gdb node
+r a.js
+... ABRIDGED ...
+#0  __GI_raise (sig=sig@entry=6) at ../sysdeps/unix/sysv/linux/raise.c:50
+#1  0x00007ffff7a58859 in __GI_abort () at abort.c:79
+#2  0x00007ffff7a58729 in __assert_fail_base (fmt=0x7ffff7bee588 "%s%s%s:%u: %s%sAssertion `%s' failed.\n%n", 
+    assertion=0x7ffff51e8170 "PJMEDIA_PIA_PTIME(&port->info) == PJMEDIA_PIA_PTIME(&m->d_port->info)", file=0x7ffff51e803d "../src/pjmedia/master_port.c", line=224, function=<optimized out>)
+    at assert.c:92
+#3  0x00007ffff7a69f36 in __GI___assert_fail (assertion=assertion@entry=0x7ffff51e8170 "PJMEDIA_PIA_PTIME(&port->info) == PJMEDIA_PIA_PTIME(&m->d_port->info)", 
+    file=file@entry=0x7ffff51e803d "../src/pjmedia/master_port.c", line=line@entry=224, function=function@entry=0x7ffff51e82a0 <__PRETTY_FUNCTION__.5624> "pjmedia_master_port_set_uport") at assert.c:101
+#4  0x00007ffff516ad8a in pjmedia_master_port_set_uport (m=0x2ecf3f0, port=port@entry=0x2ee10c8) at ../src/pjmedia/master_port.c:220
+#5  0x00007ffff514e0b8 in set_ports (media_port=0x2ecf1b8, stream_port=0x2ee10c8, call=0x2ebe1f8) at ../src/sip.cpp:2347
+#6  on_media_update (inv=<optimized out>, status=0) at ../src/sip.cpp:2301
+#7  0x00007ffff51a6a7f in inv_negotiate_sdp (inv=0x2eb8e18) at ../src/pjsip-ua/sip_inv.c:1953
+#8  inv_negotiate_sdp (inv=0x2eb8e18) at ../src/pjsip-ua/sip_inv.c:1940
+#9  0x00007ffff51a7925 in inv_check_sdp_in_incoming_msg (inv=inv@entry=0x2eb8e18, tsx=tsx@entry=0x2f23678, rdata=0x2ea4438) at ../src/pjsip-ua/sip_inv.c:2180
+#10 0x00007ffff51abdc1 in inv_on_state_confirmed (inv=0x2eb8e18, e=0x7fffffffaf50) at ../src/pjsip-ua/sip_inv.c:5163
+#11 0x00007ffff51a6e7b in mod_inv_on_tsx_state (tsx=0x2f23678, e=0x7fffffffaf50) at ../src/pjsip-ua/sip_inv.c:720
+#12 0x00007ffff51a22b9 in pjsip_dlg_on_tsx_state (dlg=0x2eb1bb8, tsx=0x2f23678, e=0x7fffffffaf50) at ../src/pjsip/sip_dialog.c:2129
+#13 0x00007ffff519b85c in tsx_set_state (tsx=tsx@entry=0x2f23678, state=state@entry=PJSIP_TSX_STATE_TERMINATED, event_src_type=event_src_type@entry=PJSIP_EVENT_RX_MSG, event_src=0x2ea4438, 
+    flag=flag@entry=0) at ../src/pjsip/sip_transaction.c:1272
+#14 0x00007ffff519d929 in tsx_on_state_proceeding_uac (tsx=0x2f23678, event=0x7fffffffb020) at ../src/pjsip/sip_transaction.c:2989
+#15 0x00007ffff519f152 in pjsip_tsx_recv_msg (tsx=tsx@entry=0x2f23678, rdata=rdata@entry=0x2ea4438) at ../src/pjsip/sip_transaction.c:1832
+#16 0x00007ffff519f259 in mod_tsx_layer_on_rx_response (rdata=0x2ea4438) at ../src/pjsip/sip_transaction.c:893
+#17 0x00007ffff518a3af in pjsip_endpt_process_rx_data (p_handled=0x7fffffffb14c, p=0x7fffffffb150, rdata=0x2ea4438, endpt=0x2e53f68) at ../src/pjsip/sip_endpoint.c:938
+#18 pjsip_endpt_process_rx_data (endpt=0x2e53f68, rdata=0x2ea4438, p=<optimized out>, p_handled=0x7fffffffb14c) at ../src/pjsip/sip_endpoint.c:867
+#19 0x00007ffff518a586 in endpt_on_rx_msg (endpt=0x2e53f68, status=<optimized out>, rdata=0x2ea4438) at ../src/pjsip/sip_endpoint.c:1080
+#20 0x00007ffff5190a24 in pjsip_tpmgr_receive_packet (mgr=<optimized out>, rdata=rdata@entry=0x2ea4438) at ../src/pjsip/sip_transport.c:2144
+#21 0x00007ffff5193bef in udp_on_read_complete (key=0x7ffff47d6f98, op_key=<optimized out>, bytes_read=<optimized out>) at ../src/pjsip/sip_transport_udp.c:188
+#22 0x00007ffff51b9367 in ioqueue_dispatch_read_event (h=0x7ffff47d6f98, ioqueue=0x2e5ed90) at ../src/pj/ioqueue_common_abs.c:605
+#23 ioqueue_dispatch_read_event (ioqueue=0x2e5ed90, h=0x7ffff47d6f98) at ../src/pj/ioqueue_common_abs.c:433
+#24 0x00007ffff51bae0f in pj_ioqueue_poll (ioqueue=0x2e5ed90, timeout=timeout@entry=0x7fffffffbc50) at ../src/pj/ioqueue_select.c:1069
+#25 0x00007ffff518a04e in pjsip_endpt_handle_events2 (endpt=0x2e53f68, max_timeout=max_timeout@entry=0x7fffffffbca0, p_count=p_count@entry=0x0) at ../src/pjsip/sip_endpoint.c:745
+#26 0x00007ffff518a0fb in pjsip_endpt_handle_events (endpt=<optimized out>, max_timeout=max_timeout@entry=0x7fffffffbca0) at ../src/pjsip/sip_endpoint.c:777
+#27 0x00007ffff5144b47 in handle_events () at ../src/sip.cpp:222
+#28 0x00007ffff51454d7 in __pjw_poll (out_evt=out_evt@entry=0x7fffffffbd50 "") at ../src/sip.cpp:756
+#29 0x00007ffff515138d in do_poll (info=...) at ../src/addon.cpp:1343
+#30 0x00007ffff515c8f9 in Napi::details::CallbackData<Napi::Value (*)(Napi::CallbackInfo const&), Napi::Value>::Wrapper(napi_env__*, napi_callback_info__*)::{lambda()#1}::operator()() const (
+    this=<synthetic pointer>) at /mnt/ssd/work/src/git/MayamaTakeshi/yate-experiments/node_modules/node-addon-api/napi-inl.h:2640
+#31 Napi::details::WrapCallback<Napi::details::CallbackData<Napi::Value (*)(Napi::CallbackInfo const&), Napi::Value>::Wrapper(napi_env__*, napi_callback_info__*)::{lambda()#1}>(Napi::details::CallbackData<Napi::Value (*)(Napi::CallbackInfo const&), Napi::Value>::Wrapper(napi_env__*, napi_callback_info__*)::{lambda()#1}) (callback=...)
+    at /mnt/ssd/work/src/git/MayamaTakeshi/yate-experiments/node_modules/node-addon-api/napi-inl.h:61
+#32 Napi::details::CallbackData<Napi::Value (*)(Napi::CallbackInfo const&), Napi::Value>::Wrapper (env=0x2e31cb0, info=0x7fffffffce40)
+    at /mnt/ssd/work/src/git/MayamaTakeshi/yate-experiments/node_modules/node-addon-api/napi-inl.h:77
+#33 0x00000000009cfc55 in v8impl::(anonymous namespace)::FunctionCallbackWrapper::Invoke(v8::FunctionCallbackInfo<v8::Value> const&) ()
+#34 0x0000000000c019e9 in v8::internal::MaybeHandle<v8::internal::Object> v8::internal::(anonymous namespace)::HandleApiCallHelper<false>(v8::internal::Isolate*, v8::internal::Handle<v8::internal::HeapObject>, v8::internal::Handle<v8::internal::HeapObject>, v8::internal::Handle<v8::internal::FunctionTemplateInfo>, v8::internal::Handle<v8::internal::Object>, v8::internal::BuiltinArguments) ()
+#35 0x0000000000c037d7 in v8::internal::Builtin_HandleApiCall(int, unsigned long*, v8::internal::Isolate*) ()
+#36 0x0000000001409319 in Builtins_CEntry_Return1_DontSaveFPRegs_ArgvOnStack_BuiltinExit () at ../../deps/v8/../../deps/v8/src/builtins/base.tq:3418
+#37 0x000000000138eaa4 in Builtins_InterpreterEntryTrampoline () at ../../deps/v8/../../deps/v8/src/builtins/base.tq:357
+#38 0x00001c41903c04b1 in ?? ()
+#39 0x00002dd662df0c11 in ?? ()
+#40 0x0000000500000000 in ?? ()
+#41 0x00001c41903c0591 in ?? ()
+#42 0x0000159b188948a9 in ?? ()
+
+
+It might be related to the fact that Yate is not sending a=sendrecv, a=sendonly etc.
+
+

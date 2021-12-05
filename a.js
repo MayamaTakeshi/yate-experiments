@@ -27,10 +27,6 @@ async function test() {
 
     await z.wait([
         {
-            event: "incoming_call",
-            call_id: m.collect("call_id"),
-        },
-        {
             event: 'response',
             call_id: oc.id,
             method: 'INVITE',
@@ -42,12 +38,15 @@ async function test() {
                 $fU: 'a',
                 $fd: 't',
                 $tU: 'b',
-                '$hdr(l)': '0',
             }),
         },
-    ], 1000)
+        {
+            event: "incoming_call",
+            call_id: m.collect("call_id"),
+        },
+    ], 2000)
 
-    ic = {
+    var ic = {
         id: z.store.call_id,
         sip_call_id: z.store.sip_call_id,
     }
@@ -60,14 +59,14 @@ async function test() {
             call_id: oc.id,
             status: 'setup_ok',
             local_mode: 'sendrecv',
-            remote_mode: 'sendrecv',
+            remote_mode: 'unknown', // Yate doesn't send a=sendrecv so we set remote_mode='unknown'
         },
         {
             event: 'media_status',
             call_id: ic.id,
             status: 'setup_ok',
             local_mode: 'sendrecv',
-            remote_mode: 'sendrecv',
+            remote_mode: 'unknown', // Yate doesn't send a=sendrecv so we set remote_mode='unknown'
         },
         {
             event: 'response',
@@ -81,7 +80,7 @@ async function test() {
                 $fd: 't',
                 $tU: 'b',
                 '$hdr(content-type)': 'application/sdp',
-                $rb: '!{_}a=sendrecv',
+                //$rb: '!{_}a=sendrecv', // Yate doesn't send a=sendrecv
             }),
         },
     ], 1000)
@@ -109,13 +108,22 @@ async function test() {
 
     await z.wait([
         {
+            event: 'response', // Yate sends '100 Trying' before '200 OK' for REINIVTE
+            call_id: oc.id,
+            method: 'INVITE',
+            msg: sip_msg({
+                $rs: '100',
+                $rr: 'Trying',
+            }),
+        },
+        {
             event: 'response',
             call_id: oc.id,
             method: 'INVITE',
             msg: sip_msg({
                 $rs: '200',
                 $rr: 'OK',
-                $rb: '!{_}a=recvonly',
+                //$rb: '!{_}a=sendrecv', // Yate doesn't send a=sendrecv
             }),
         },
         {
@@ -123,14 +131,7 @@ async function test() {
             call_id: oc.id,
             status: 'setup_ok',
             local_mode: 'sendonly',
-            remote_mode: 'recvonly',
-        },
-        {
-            event: 'media_status',
-            call_id: ic.id,
-            status: 'setup_ok',
-            local_mode: 'recvonly',
-            remote_mode: 'sendonly',
+            remote_mode: 'unknown', // Yate doesn't send a=recvonly so we set remote_mode='unknown'
         },
     ], 500)
 
