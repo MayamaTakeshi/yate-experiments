@@ -61,7 +61,9 @@ cp conf.d/* ~/work/src/svn/yate/trunk/conf.d/
 node check_route.js
 ```
 
-### Making call to Yate
+### Making test calls
+
+#### Scenario 1 : ua1 -> yate -> ua2 with reINVITES and DTMF exchange.
 ```
-node a.js
+node leg1_leg2.reinvites.js
 ```
