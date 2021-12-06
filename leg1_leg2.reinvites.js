@@ -8,6 +8,8 @@ async function test() {
     //sip.set_log_level(6)
     sip.dtmf_aggregation_on(500)
 
+    sip.set_codecs("PCMU/8000/1:128")
+
     z.trap_events(sip.event_source, 'event', (evt) => {
         var e = evt.args[0]
         return e
@@ -147,7 +149,7 @@ async function test() {
         },
     ], 2000)
 
-    sip.call.reinvite(ic.id, false, 0)
+    sip.call.reinvite(ic.id, true, 0)
 
     await z.wait([
         {
@@ -155,59 +157,33 @@ async function test() {
             call_id: ic.id,
             method: 'INVITE',
             msg: sip_msg({
-                $rs: '200',
-                $rr: 'OK',
-                $rb: '!{_}a=sendonly',
-            }),
-        },
-        {
-            event: 'media_status',
-            call_id: oc.id,
-            status: 'setup_ok',
-            local_mode: 'sendonly',
-            remote_mode: 'recvonly',
-        },
-        {
-            event: 'media_status',
-            call_id: ic.id,
-            status: 'setup_ok',
-            local_mode: 'recvonly',
-            remote_mode: 'sendonly',
-        },
-    ], 500)
-
-    sip.call.send_dtmf(oc.id, '1234', 0)
-    sip.call.send_dtmf(ic.id, '4321', 1) // this will not generate event 'dtmf' as the call is on hold
-
-    await z.wait([
-        {
-            event: 'dtmf',
-            call_id: ic.id,
-            digits: '1234',
-            mode: 0,
-        },
-    ], 2000)
-
-    sip.call.send_request(oc.id, 'INFO')
-
-    await z.wait([
-        {
-            event: 'request',
-            call_id: ic.id,
-            msg: sip_msg({
-                $rm: 'INFO',
+                $rs: '100',
+                $rr: 'Trying',
             }),
         },
         {
             event: 'response',
-            call_id: oc.id,
-            method: 'INFO',
+            call_id: ic.id,
+            method: 'INVITE',
             msg: sip_msg({
                 $rs: '200',
                 $rr: 'OK',
             }),
         },
+        {
+            event: 'media_status',
+            call_id: ic.id,
+            status: 'setup_ok',
+            local_mode: 'sendonly',
+            remote_mode: 'unknown',
+        },
     ], 500)
+
+    // these will not generate event 'dtmf' because the call is on hold on both legs
+    sip.call.send_dtmf(oc.id, '1234', 0)
+    sip.call.send_dtmf(ic.id, '4321', 1)
+
+    await z.sleep(1000)
 
     sip.call.reinvite(oc.id, false, 0)
 
@@ -217,9 +193,17 @@ async function test() {
             call_id: oc.id,
             method: 'INVITE',
             msg: sip_msg({
+                $rs: '100',
+                $rr: 'Trying',
+            }),
+        },
+        {
+            event: 'response',
+            call_id: oc.id,
+            method: 'INVITE',
+            msg: sip_msg({
                 $rs: '200',
                 $rr: 'OK',
-                $rb: '!{_}a=sendrecv',
             }),
         },
         {
@@ -227,14 +211,37 @@ async function test() {
             call_id: oc.id,
             status: 'setup_ok',
             local_mode: 'sendrecv',
-            remote_mode: 'sendrecv',
+            remote_mode: 'unknown',
+        },
+    ], 500)
+
+    sip.call.reinvite(ic.id, false, 0)
+
+    await z.wait([
+        {
+            event: 'response',
+            call_id: ic.id,
+            method: 'INVITE',
+            msg: sip_msg({
+                $rs: '100',
+                $rr: 'Trying',
+            }),
+        },
+        {
+            event: 'response',
+            call_id: ic.id,
+            method: 'INVITE',
+            msg: sip_msg({
+                $rs: '200',
+                $rr: 'OK',
+            }),
         },
         {
             event: 'media_status',
             call_id: ic.id,
             status: 'setup_ok',
             local_mode: 'sendrecv',
-            remote_mode: 'sendrecv',
+            remote_mode: 'unknown',
         },
     ], 500)
 
@@ -266,6 +273,15 @@ async function test() {
         {
             event: 'call_ended',
             call_id: ic.id,
+        },
+        {
+            event: 'response',
+            call_id: oc.id,
+            method: 'BYE',
+            msg: sip_msg({
+                $rs: '100',
+                $rr: 'Trying',
+            }),
         },
         {
             event: 'response',

@@ -1,6 +1,6 @@
 2021/12/05 takeshi:
 
-node.js crashes within pjsip:
+node.js crashes within pjsip while testing reINVITE on Leg2:
 
 takeshi:yate-experiments$ gdb node
 r a.js
@@ -59,4 +59,109 @@ r a.js
 
 It might be related to the fact that Yate is not sending a=sendrecv, a=sendonly etc.
 
+Checking the reason for the assertion failure:
+
+
+(gdb) f 4
+#4  0x00007ffff516ad8a in pjmedia_master_port_set_uport (m=0x2f31ab0, 
+    port=port@entry=0x2ede3f8) at ../src/pjmedia/master_port.c:220
+220             PJ_ASSERT_RETURN(
+(gdb) l
+215
+216         /* If we have downstream port, make sure they have matching samples per
+217          * frame.
+218          */
+219         if (m->d_port) {
+220             PJ_ASSERT_RETURN(
+221                 PJMEDIA_PIA_PTIME(&port->info) ==
+222                     PJMEDIA_PIA_PTIME(&m->d_port->info),
+223                 PJMEDIA_ENCSAMPLESPFRAME
+224             );
+(gdb) p port->info
+$21 = {name = {ptr = 0x2f27640 "strm0x2eddc08", slen = 13}, 
+  signature = 1414742352, dir = PJMEDIA_DIR_ENCODING_DECODING, fmt = {
+    id = 0, type = PJMEDIA_TYPE_AUDIO, 
+    detail_type = PJMEDIA_FORMAT_DETAIL_AUDIO, det = {aud = {
+        clock_rate = 8000, channel_count = 1, frame_time_usec = 20000, 
+        bits_per_sample = 16, avg_bps = 128000, max_bps = 128000}, 
+      vid = {size = {w = 8000, h = 1}, fps = {num = 20000, denum = 16}, 
+        avg_bps = 128000, max_bps = 128000}, user = "@"}}}
+(gdb) p m->d_port->info
+$22 = {name = {ptr = 0x7ffff51dbb86 "dtmfdet", slen = 7}, 
+  signature = 1685349452, dir = PJMEDIA_DIR_ENCODING_DECODING, fmt = {
+    id = 0, type = PJMEDIA_TYPE_AUDIO, 
+    detail_type = PJMEDIA_FORMAT_DETAIL_AUDIO, det = {aud = {
+        clock_rate = 8000, channel_count = 1, frame_time_usec = 30000, 
+        bits_per_sample = 16, avg_bps = 128000, max_bps = 128000}, 
+      vid = {size = {w = 8000, h = 1}, fps = {num = 30000, denum = 16}, 
+        avg_bps = 128000, max_bps = 128000}, user = "@"}}}
+(gdb) 
+
+
+(gdb) list PJMEDIA_PIA_PTIME
+file: "../include/pjmedia/port.h", line number: 284, symbol: "PJMEDIA_PIA_PTIME"
+279      * pjmedia_port_info.
+280      *
+281      * @param pia           Pointer to port info containing audio format.
+282      * @return              Frame interval in msec.
+283      */
+284     PJ_INLINE(unsigned) PJMEDIA_PIA_PTIME(const pjmedia_port_info *pia)
+285     {
+286         pj_assert(pia->fmt.type==PJMEDIA_TYPE_AUDIO &&
+287                   pia->fmt.detail_type==PJMEDIA_FORMAT_DETAIL_AUDIO);
+288         return pia->fmt.det.aud.frame_time_usec / 1000;
+file: "../include/pjmedia/port.h", line number: 286, symbol: "PJMEDIA_PIA_PTIME"
+281      * @param pia           Pointer to port info containing audio format.
+282      * @return              Frame interval in msec.
+283      */
+284     PJ_INLINE(unsigned) PJMEDIA_PIA_PTIME(const pjmedia_port_info *pia)
+285     {
+286         pj_assert(pia->fmt.type==PJMEDIA_TYPE_AUDIO &&
+287                   pia->fmt.detail_type==PJMEDIA_FORMAT_DETAIL_AUDIO);
+288         return pia->fmt.det.aud.frame_time_usec / 1000;
+289     }
+290
+
+So the assertion fails because we will get 20 != 30 when comparing ptimes.
+
+Then I verified that if we enable all codecs in sip-lab, when generating the Leg2, Yate sends a=ptime:30
+But if I enable just PCMU, it doesn't.
+
+For comparison
+
+Yate INVITE SDP to Leg2 (OK)
+v=0
+o=yate 1638778020 1638778020 IN IP4 127.0.0.1
+s=SIP Call
+c=IN IP4 127.0.0.1
+t=0 0
+m=audio 21432 RTP/AVP 0 101
+a=rtpmap:0 PCMU/8000
+a=rtpmap:101 telephone-event/8000
+
+
+Yate INVITE SDP to Leg2 (NG)
+v=0
+o=yate 1638778081 1638778081 IN IP4 127.0.0.1
+s=SIP Call
+c=IN IP4 127.0.0.1
+t=0 0
+m=audio 22188 RTP/AVP 0 8 98 104 103 102 9 101
+a=rtpmap:0 PCMU/8000
+a=rtpmap:8 PCMA/8000
+a=rtpmap:98 iLBC/8000
+a=fmtp:98 mode=30
+a=rtpmap:104 SPEEX/32000                                                                                                                                                                                   
+a=rtpmap:103 SPEEX/16000
+a=rtpmap:102 SPEEX/8000
+a=rtpmap:9 G722/8000
+a=rtpmap:101 telephone-event/8000
+a=ptime:30
+
+
+For full capture see captures/ptime_assertion_failure.pcap (SIP sessions 1 and 2 are the OK call, SIP sessions 3 and 4 are the NG call)
+
+So, I believe either iLBC or SPEEX is forcing Yate to use ptime:30 and this somehow causes a problem with pjsip (but only for reINVITE)
+
+Anyway this is not important to us so we will just use PCMU/PCMA for further tests.
 
