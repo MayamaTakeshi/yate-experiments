@@ -17,8 +17,8 @@ async function test() {
 
     console.log(sip.start((data) => { console.log(data)} ))
 
-    t1 = sip.transport.create("127.0.0.1", 5090, 1)
-    t2 = sip.transport.create("127.0.0.1", 5092, 1)
+    var t1 = sip.transport.create("127.0.0.1", 5090, 1)
+    var t2 = sip.transport.create("127.0.0.1", 5092, 1)
 
     console.log("t1", t1)
     console.log("t2", t2)

@@ -1,3 +1,4 @@
+------------------------------------------------------
 2021/12/05 takeshi:
 
 node.js crashes within pjsip while testing reINVITE on Leg2:
@@ -165,3 +166,17 @@ So, I believe either iLBC or SPEEX is forcing Yate to use ptime:30 and this some
 
 Anyway this is not important to us so we will just use PCMU/PCMA for further tests.
 
+------------------------------------------------------
+2021/12/08 takeshi:
+
+Regarding creation of outgoing calls (click-to-call), checking the next-yate code we found:
+
+class YateChannel extends EventEmitter {
+    constructor(message) {
+        // TODO channel for outgoing call, now is only for incoming
+
+So we cannot use this to implement click-to-call till this is done.
+
+In case we decide to work on this, check this dialer written in PHP:
+
+https://github.com/vir/yate/blob/master/share/scripts/dialout-dialer.php

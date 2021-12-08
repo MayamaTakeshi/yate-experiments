@@ -1,13 +1,3 @@
-/**
- * @file check_route.js
- * @license Apache-2.0
- * @author Anton <aucyxob@gmail.com>
- * @description The test routing rmanager utility is based on core API of "next-yate"
- * @example 
- * >telnet localhost 5038
- * >route 99991001
- */
-
 const tl = require('tracing-log')
 
 const { Yate, YateMessage, YateChannel } = require("next-yate");

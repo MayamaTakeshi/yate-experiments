@@ -53,17 +53,27 @@ cp conf.d/* ~/work/src/svn/yate/trunk/conf.d/
 
 ### Starting yate (from build folder)
 ```
-./run -vvvvv
+./run -vvvvvv
 ```
 
-### Starting sample next-yate script
+### Running tests
+
+Inside folder tests there will be subfolders like simple, register etc.
+
+Each subfolder does a test with yate.
+
+Each subfolder contains:
+  - next_yate_app.js : this is the next_yate application that will process registration and calls
+  - test.js: this is the app that will simulate client UAs interacting with yate.
+
+To run the test, do:
+
+Start the next_yate_app.js
 ```
-node check_route.js
+node next_yate_app.js
 ```
 
-### Making test calls
-
-#### Scenario 1 : ua1 -> yate -> ua2 with reINVITES and DTMF exchange.
+and on another shell start the test.js
 ```
-node leg1_leg2.reinvites.js
+node test.js
 ```
