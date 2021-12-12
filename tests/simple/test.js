@@ -1,3 +1,19 @@
+const tl = require('tracing-log')
+
+const { Yate, YateMessage, YateChannel } = require("next-yate");
+
+let yate = new Yate({host: "127.0.0.1"});
+yate.init();
+
+async function onCallRoute(msg) {
+    tl.info('onCallRoute')
+    //console.dir(msg)
+
+    msg.retValue("sip/sip:b@127.0.0.1:5092")
+    return true
+}
+
+yate.install(onCallRoute, 'call.route');
 var sip = require ('sip-lab')
 var Zester = require('zester')
 var z = new Zester()
@@ -5,6 +21,8 @@ var m = require('data-matching')
 var sip_msg = require('sip-matching')
 
 async function test() {
+    await z.sleep(1000) // wait a little because yate.install() needs to complete
+
     //sip.set_log_level(6)
     sip.dtmf_aggregation_on(500)
 

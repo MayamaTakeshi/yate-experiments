@@ -1,3 +1,60 @@
+const tl = require('tracing-log')
+
+const { Yate, YateMessage, YateChannel } = require("next-yate");
+
+let yate = new Yate({host: "127.0.0.1"});
+yate.init();
+
+let location = {}
+
+async function onCallRoute(msg) {
+    tl.info('onCallRoute')
+    //tl.info(JSON.stringify(msg))
+
+    var key = `${msg.called}@${msg.domain}`
+    var address = location[key]
+    if(address) {
+        tl.info(`key=${key} found address=${address}`)
+        msg.retValue(address)
+        return true
+    } else {
+        tl.info(`key=${key} not found`)
+        return false
+    }
+}
+
+async function onAuth(msg) {
+    tl.info('onAuth')
+    return true
+}
+
+async function onRegister(msg) {
+    tl.info('onRegister')
+    //tl.info(JSON.stringify(msg))
+    var key = `${msg.username}@${msg.domain}`
+    location[key] = msg.data
+
+    tl.info(`location=${JSON.stringify(location)}`)
+    return true
+}
+
+async function onUnregister(msg) {
+    tl.info('onUnregister')
+    //tl.info(JSON.stringify(msg))
+
+    var key = `${msg.username}@${msg.domain}`
+    delete location[key]
+
+    tl.info(`location=${JSON.stringify(location)}`)
+    return true
+}
+
+yate.install(onCallRoute, 'call.route');
+
+yate.install(onAuth, 'user.auth')
+yate.install(onRegister, 'user.register')
+yate.install(onUnregister, 'user.unregister')
+
 var sip = require ('sip-lab')
 var Zester = require('zester')
 var z = new Zester()
@@ -8,6 +65,8 @@ const yate_server = "127.0.0.1:5060"
 const domain = 'test1.com'
 
 async function test() {
+    await z.sleep(1000) // wait a little because yate.install() needs to complete
+
     //sip.set_log_level(6)
     sip.dtmf_aggregation_on(500)
 

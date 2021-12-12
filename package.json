@@ -13,6 +13,7 @@
     "sip-lab": "^1.7.0",
     "sip-matching": "^1.3.13",
     "tracing-log": "^1.2.0",
+    "yate-extmodule": "github:latysheff/node-yate-extmodule",
     "zester": "^4.1.1"
   }
 }

@@ -180,3 +180,14 @@ So we cannot use this to implement click-to-call till this is done.
 In case we decide to work on this, check this dialer written in PHP:
 
 https://github.com/vir/yate/blob/master/share/scripts/dialout-dialer.php
+
+------------------------------------------------------
+2021/12/12 takeshi:
+
+I found this module:
+  https://github.com/latysheff/node-yate-extmodule
+
+It seems complete so we will switch from next-yate to it.
+
+
+

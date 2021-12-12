@@ -2,7 +2,7 @@
 
 ## Overview
 
-This repo documents our experiemnts with Yate (Yet Another Telephony Engine) and node.js next-yate module.
+This repo documents our experiments with Yate (Yet Another Telephony Engine)
 
 ## Preparation
 
@@ -58,22 +58,17 @@ cp conf.d/* ~/work/src/svn/yate/trunk/conf.d/
 
 ### Running tests
 
+First install node modules
+```
+npm install
+```
+
 Inside folder tests there will be subfolders like simple, register etc.
 
 Each subfolder does a test with yate.
 
-Each subfolder contains:
-  - next_yate_app.js : this is the next_yate application that will process registration and calls
-  - test.js: this is the app that will simulate client UAs interacting with yate.
-
-To run the test, do:
-
-Start the next_yate_app.js
+To run a test, do:
 ```
-node next_yate_app.js
-```
-
-and on another shell start the test.js
-```
+cd TEST_FOLDER
 node test.js
 ```
