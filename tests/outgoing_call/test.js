@@ -1,3 +1,5 @@
+const tl = require('tracing-log')
+
 const sip = require ('sip-lab')
 const Zester = require('zester')
 const z = new Zester()
@@ -10,7 +12,7 @@ const connection = extmodule.connect({host: '127.0.0.1', port: 5040}, () => {
     console.log('connected')
 })
 
-connection.subscribe('call.route', (msg) => {
+connection.watch('call.route', (msg) => {
     console.log('call.route')
     console.log(msg)
 })
@@ -29,6 +31,8 @@ connection.watch('chan.dtmf', (msg) => {
 
 
 async function test() {
+    await z.sleep(1000) // wait a little because connection.subscribe() needs to complete
+
     sip.dtmf_aggregation_on(500)
 
     sip.set_codecs("PCMU/8000/1:128")

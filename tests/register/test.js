@@ -77,13 +77,13 @@ async function test() {
         return e
     })
 
-    console.log(sip.start((data) => { console.log(data)} ))
+    tl.info(sip.start((data) => { tl.info(data)} ))
 
     t1 = sip.transport.create("127.0.0.1", 5090, 1)
     t2 = sip.transport.create("127.0.0.1", 5092, 1)
 
-    console.log("t1", t1)
-    console.log("t2", t2)
+    tl.info("t1", t1)
+    tl.info("t2", t2)
 
     var a1 = sip.account.create(t1.id, domain, yate_server, 'user1', 'pass1')
     var a2 = sip.account.create(t2.id, domain, yate_server, 'user2', 'pass2')
@@ -405,7 +405,7 @@ async function test() {
         },
     ], 1000)
 
-    console.log("Success")
+    tl.info("Success")
 
     sip.stop()
 }
