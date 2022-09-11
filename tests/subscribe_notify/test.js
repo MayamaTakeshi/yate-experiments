@@ -4,8 +4,8 @@
 const tl = require('tracing-log')
 
 const sip = require ('sip-lab')
-const Zester = require('zester')
-const z = new Zester()
+const Zeq = require('@mayama/zeq')
+const z = new Zeq()
 const m = require('data-matching')
 const sip_msg = require('sip-matching')
 
@@ -83,6 +83,8 @@ connection.subscribe('user.unregister', 50, (message, retval) => {
 async function test() {
     await z.sleep(1000) // wait a little because connection.subscribe() needs to complete
 
+    const domain = 'test1.com'
+
     sip.dtmf_aggregation_on(500)
 
     sip.set_codecs("PCMU/8000/1:128")
@@ -94,17 +96,28 @@ async function test() {
 
     console.log(sip.start((data) => { console.log(data)} ))
 
-    const t1 = sip.transport.create("127.0.0.1", 5090, 1)
-    const t2 = sip.transport.create("127.0.0.1", 5092, 1)
+    const t1 = sip.transport.create({address: "127.0.0.1", port: 5090})
+    const t2 = sip.transport.create({address: "127.0.0.1", port: 5092})
 
     console.log("t1", t1)
     console.log("t2", t2)
 
-    const a1 = sip.account.create(t1.id, 'test1.com', '127.0.0.1', 'user1', 'user1')
-    const a2 = sip.account.create(t1.id, 'test1.com', '127.0.0.1', 'user2', 'user2')
+    const a1 = sip.account.create(t1.id, {
+        domain,
+        server: '127.0.0.1',
+        username: 'user1',
+        password: 'user1'
+    })
 
-    sip.account.register(a1, true)
-    sip.account.register(a2, true)
+    const a2 = sip.account.create(t1.id, {
+        domain,
+        server: '127.0.0.1',
+        username: 'user2',
+        password: 'user2'
+    })
+
+    sip.account.register(a1, {auto_register: true})
+    sip.account.register(a2, {auto_register: true})
 
     await z.wait([
         {
@@ -123,11 +136,36 @@ async function test() {
         },
     ], 1000)
 
-    const s1 = sip.subscription_create(t1.id, 'dialog', 'application/dialog-info+xml', '<sip:user1@test1.com>', '<sip:user1@test1.com>', 'sip:park1@test1.com', `sip:127.0.0.1`, 'test1.com', 'user1', 'user1')
-    const s2 = sip.subscription_create(t2.id, 'dialog', 'application/dialog-info+xml', '<sip:user1@test1.com>', '<sip:user1@test1.com>', 'sip:park1@test1.com', `sip:127.0.0.1`, 'test1.com', 'user2', 'user2')
+    const s1 = sip.subscription.create(t1.id, {
+        event: 'dialog',
+        accept: 'application/dialog-info+xml',
+        from_uri: `<sip:user1@${domain}>`,
+        to_uri: `<sip:user1@${domain}>`,
+        request_uri: `sip:park1@${domain}`,
+        proxy_uri: `sip:127.0.0.1`,
+        auth: {
+            realm: domain,
+            username: 'user1',
+            password: 'user1'
+        }
+    })
 
-    sip.subscription_subscribe(s1, 120)
-    sip.subscription_subscribe(s2, 120)
+    const s2 = sip.subscription.create(t2.id, {
+        event: 'dialog',
+        accept: 'application/dialog-info+xml',
+        from_uri: `<sip:user1@${domain}>`,
+        to_uri: `<sip:user1@${domain}>`,
+        request_uri: `sip:park1@${domain}`,
+        proxy_uri: `sip:127.0.0.1`,
+        auth: {
+            realm: domain,
+            username: 'user2',
+            password: 'user2'
+        }
+    })
+
+    sip.subscription.subscribe(s1, {expires: 120})
+    sip.subscription.subscribe(s2, {expires: 120})
 
     await z.wait([
         {
@@ -145,9 +183,7 @@ async function test() {
             method: 'SUBSCRIBE',
             msg: sip_msg({
                 $rs: '200',
-                $rr: 'OK',
-            })
-        },
+                $rr: 'OK', }) },
         {
             event: 'response',
             subscription_id: s2,
@@ -168,13 +204,13 @@ async function test() {
         },
     ], 1000)
 
-    var subs = subscriptions['user1@test1.com']
+    var subs = subscriptions[`user1@${domain}`]
 
     connection.dispatch('resource.notify', {
             event: 'dialog',
             expires: 120,
-            notifier: 'park1@test1.com',
-            subscriber: 'user1@test1.com',
+            notifier: `park1@${domain}`,
+            subscriber: `user1@${domain}`,
             notifyto: subs.sip_contact,
             subscriptionstate: 'active',
             //data: '<dialog-info> <dialog> <state>terminated</state> <remote> <identity>sip:*40$park_position@$name_d1</identity> </remote> </dialog> </dialog-info>',

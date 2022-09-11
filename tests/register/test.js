@@ -56,8 +56,8 @@ yate.install(onRegister, 'user.register')
 yate.install(onUnregister, 'user.unregister')
 
 var sip = require ('sip-lab')
-var Zester = require('zester')
-var z = new Zester()
+var Zeq = require('@mayama/zeq')
+var z = new Zeq()
 var m = require('data-matching')
 var sip_msg = require('sip-matching')
 
@@ -73,23 +73,35 @@ async function test() {
     sip.set_codecs("PCMU/8000/1:128")
 
     z.trap_events(sip.event_source, 'event', (evt) => {
-        var e = evt.args[0]
+        const e = evt.args[0]
         return e
     })
 
     tl.info(sip.start((data) => { tl.info(data)} ))
 
-    t1 = sip.transport.create("127.0.0.1", 5090, 1)
-    t2 = sip.transport.create("127.0.0.1", 5092, 1)
+    t1 = sip.transport.create({address: "127.0.0.1", port: 5090, type: "udp"})
+    t2 = sip.transport.create({address: "127.0.0.1", port: 5092, type: "udp"})
 
     tl.info("t1", t1)
     tl.info("t2", t2)
 
-    var a1 = sip.account.create(t1.id, domain, yate_server, 'user1', 'pass1')
-    var a2 = sip.account.create(t2.id, domain, yate_server, 'user2', 'pass2')
 
-    sip.account.register(a1, true)
-    sip.account.register(a2, true)
+    const a1 = sip.account.create(t1.id, {
+        domain, 
+        server: yate_server,
+        username: 'user1',
+        password: 'pass1',
+    })
+
+    const a2 = sip.account.create(t2.id, {
+        domain, 
+        server: yate_server,
+        username: 'user2',
+        password: 'pass2',
+    })
+
+    sip.account.register(a1, {auto_register: true})
+    sip.account.register(a2, {auto_register: true})
 
     await z.wait([
         {
@@ -108,9 +120,13 @@ async function test() {
         },
     ], 1000)
 
-    flags = 0
-
-    oc = sip.call.create(t1.id, flags, `sip:user1@${domain}`, `sip:user2@${yate_server}`, `sip:user2@${yate_server}`, '', '', domain, 'user1', 'pass1')
+    oc = sip.call.create(t1.id, {from_uri: `sip:user1@${domain}`, to_uri: `sip:user2@${yate_server}`, request_uri: `sip:user2@${yate_server}`, 
+        auth: {
+            realm: domain,
+            username: 'user1',
+            password: 'pass1',
+        },
+    })
 
     await z.wait([
         {
@@ -142,7 +158,7 @@ async function test() {
         sip_call_id: z.store.sip_call_id,
     }
 
-    sip.call.respond(ic.id, 200, 'OK')
+    sip.call.respond(ic.id, {code: 200, reason: 'OK'})
 
     await z.wait([
         {
@@ -176,8 +192,8 @@ async function test() {
         },
     ], 1000)
 
-    sip.call.send_dtmf(oc.id, '1234', 0)
-    sip.call.send_dtmf(ic.id, '4321', 1)
+    sip.call.send_dtmf(oc.id, {digits: '1234', mode: 0})
+    sip.call.send_dtmf(ic.id, {digits: '4321', mode: 1})
 
     await z.wait([
         {
@@ -194,8 +210,7 @@ async function test() {
         },
     ], 2000)
 
-
-    sip.call.reinvite(oc.id, true, 0)
+    sip.call.reinvite(oc.id, {hold: true})
 
     await z.wait([
         {
@@ -226,8 +241,8 @@ async function test() {
         },
     ], 500)
 
-    sip.call.send_dtmf(oc.id, '1234', 0)
-    sip.call.send_dtmf(ic.id, '4321', 1) // this will not generate event 'dtmf' as the call is on hold
+    sip.call.send_dtmf(oc.id, {digits: '1234', mode: 0})
+    sip.call.send_dtmf(ic.id, {digits: '4321', mode: 1}) // this will not generate event 'dtmf' as the call is on hold
 
     await z.wait([
         {
@@ -238,7 +253,7 @@ async function test() {
         },
     ], 2000)
 
-    sip.call.reinvite(ic.id, true, 0)
+    sip.call.reinvite(ic.id, {hold: true})
 
     await z.wait([
         {
@@ -269,12 +284,12 @@ async function test() {
     ], 500)
 
     // these will not generate event 'dtmf' because the call is on hold on both legs
-    sip.call.send_dtmf(oc.id, '1234', 0)
-    sip.call.send_dtmf(ic.id, '4321', 1)
+    sip.call.send_dtmf(oc.id, {digits: '1234', mode: 0})
+    sip.call.send_dtmf(ic.id, {digits: '4321', mode: 1})
 
     await z.sleep(1000)
 
-    sip.call.reinvite(oc.id, false, 0)
+    sip.call.reinvite(oc.id, {hold: false})
 
     await z.wait([
         {
@@ -304,7 +319,7 @@ async function test() {
         },
     ], 500)
 
-    sip.call.reinvite(ic.id, false, 0)
+    sip.call.reinvite(ic.id, {hold: false})
 
     await z.wait([
         {
@@ -334,8 +349,8 @@ async function test() {
         },
     ], 500)
 
-    sip.call.send_dtmf(oc.id, '1234', 0)
-    sip.call.send_dtmf(ic.id, '4321', 1)
+    sip.call.send_dtmf(oc.id, {digits: '1234', mode: 0})
+    sip.call.send_dtmf(ic.id, {digits: '4321', mode: 1})
 
     await z.wait([
         {

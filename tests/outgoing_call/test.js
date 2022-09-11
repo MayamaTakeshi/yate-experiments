@@ -1,8 +1,8 @@
 const tl = require('tracing-log')
 
 const sip = require ('sip-lab')
-const Zester = require('zester')
-const z = new Zester()
+const Zeq = require('@mayama/zeq')
+const z = new Zeq()
 const m = require('data-matching')
 const sip_msg = require('sip-matching')
 
@@ -44,12 +44,12 @@ async function test() {
 
     console.log(sip.start((data) => { console.log(data)} ))
 
-    const t1 = sip.transport.create("127.0.0.1", 5090, 1)
+    const t1 = sip.transport.create({address: "127.0.0.1", port: 5090, type: 'udp'})
 
     console.log("t1", t1)
 
     connection.dispatch('call.execute', {
-            direct: `sip/sip:user1@${t1.ip}:${t1.port}`,
+            direct: `sip/sip:user1@${t1.address}:${t1.port}`,
             callto: "tone/dial;tonedetect_in=yes",
             caller: "0312341234",
         },  (msg) => {
@@ -71,7 +71,7 @@ async function test() {
 
     const ic = z.store.ic
 
-    sip.call.respond(ic, 200, 'OK')
+    sip.call.respond(ic, {code: 200, reason:'OK'})
 
     await z.wait([
         {
@@ -83,7 +83,7 @@ async function test() {
         },
     ], 1000)
 
-    sip.call.send_dtmf(ic, '1', 0)
+    sip.call.send_dtmf(ic, {digits:'1', mode:0})
 
     await z.wait([
         {
