@@ -63,12 +63,14 @@ First install node modules
 npm install
 ```
 
-Inside folder tests there will be subfolders like simple, register etc.
-
-Each subfolder does a test with yate.
+Inside folder tests there js files. Each file correspond to a test.
 
 To run a test, do:
 ```
-cd TEST_FOLDER
-node test.js
+node tests/FILE_NAME
+```
+
+To run all tests do:
+```
+./runtests
 ```
