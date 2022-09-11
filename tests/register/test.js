@@ -100,8 +100,8 @@ async function test() {
         password: 'pass2',
     })
 
-    sip.account.register(a1, {auto_register: true})
-    sip.account.register(a2, {auto_register: true})
+    sip.account.register(a1, {auto_refresh: true})
+    sip.account.register(a2, {auto_refresh: true})
 
     await z.wait([
         {
