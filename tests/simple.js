@@ -312,7 +312,7 @@ async function test() {
         },
     ], 1000)
 
-    await z.sleep(1000)
+    await z.sleep(100)
 
     console.log("Success")
 
