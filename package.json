@@ -9,10 +9,8 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "@mayama/zeq": "^4.1.14",
     "next-yate": "^0.1.1",
-    "sip-lab": "^1.12.12",
-    "sip-matching": "^1.3.31",
+    "sip-lab": "^1.12.20",
     "tracing-log": "^1.2.0",
     "yate-extmodule": "github:latysheff/node-yate-extmodule"
   }
