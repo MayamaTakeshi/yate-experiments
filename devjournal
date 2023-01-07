@@ -190,4 +190,213 @@ I found this module:
 It seems complete so we will switch from next-yate to it.
 
 
+------------------------------------------------------
+2022/01/07 takeshi:
+
+I asked ChatGPT to write a whitenoise module for yate. Here's its reply:
+```
+#include <yatephone.h>
+
+using namespace TelEngine;
+
+class WhiteNoise : public Module
+{
+public:
+    WhiteNoise();
+    ~WhiteNoise();
+    virtual void initialize();
+    virtual bool received(Message& msg, int id);
+
+private:
+    DataBlock m_data;
+};
+
+WhiteNoise::WhiteNoise()
+    : Module("whitenoise", "misc", true)
+{
+    Output("Loaded module White Noise");
+}
+
+WhiteNoise::~WhiteNoise()
+{
+    Output("Unloading module White Noise");
+}
+
+void WhiteNoise::initialize()
+{
+    // Initialize the white noise data block
+    m_data.assign(8000,0);
+    for (int i = 0; i < m_data.length(); i++)
+        m_data[i] = (char)(rand() % 256);
+}
+
+bool WhiteNoise::received(Message& msg, int id)
+{
+    if (id == Halt)
+        return false;
+    if (id == Play) {
+        // Check if the message is for a channel
+        if (!msg.getParam("targetid"))
+            return false;
+        // Check if the message is a white noise play request
+        if (msg.getValue("tone") != "whitenoise")
+            return false;
+        // Get the channel and set the data provider
+        RefPointer<CallEndpoint> ch = YOBJECT(CallEndpoint,msg.getObject("channel"));
+        if (ch) {
+            ch->setDataTrans(new DataProvider(m_data));
+            msg.setParam("error","play");
+        }
+        return true;
+    }
+    return false;
+}
+
+INIT_PLUGIN(WhiteNoise);
+
+
+This module listens for "play" messages and checks if the requested tone is "whitenoise". If it is, it sets the data provider for the channel to a DataProvider object that plays the white noise data block.
+
+```
+
+------------------------------------------------------
+2022/01/07 takeshi:
+
+I asked ChatGPT to write a module that generates MorseCode from text to a channel. Here's its reply:
+```
+#include <yatephone.h>
+#include <string>
+
+using namespace TelEngine;
+
+class MorseCode : public Module
+{
+public:
+    MorseCode();
+    ~MorseCode();
+    virtual void initialize();
+    virtual bool received(Message& msg, int id);
+
+private:
+    DataBlock m_data;
+    String m_text;
+    void encodeMorse(const char* text, String& morse);
+    void addTone(char c, String& morse);
+};
+
+MorseCode::MorseCode()
+    : Module("morsecode", "misc", true)
+{
+    Output("Loaded module Morse Code");
+}
+
+MorseCode::~MorseCode()
+{
+    Output("Unloading module Morse Code");
+}
+
+void MorseCode::initialize()
+{
+    // Initialize the white noise data block
+    m_data.assign(8000,0);
+    for (int i = 0; i < m_data.length(); i++)
+        m_data[i] = (char)(rand() % 256);
+}
+
+bool MorseCode::received(Message& msg, int id)
+{
+    if (id == Halt)
+        return false;
+    if (id == Play) {
+        // Check if the message is for a channel
+        if (!msg.getParam("targetid"))
+            return false;
+        // Check if the message is a Morse code play request
+        if (msg.getValue("tone") != "morsecode")
+            return false;
+        // Get the text to play and encode it as Morse code
+        m_text = msg.getValue("text");
+        String morse;
+        encodeMorse(m_text.c_str(), morse);
+        // Get the channel and set the data provider
+        RefPointer<CallEndpoint> ch = YOBJECT(CallEndpoint,msg.getObject("channel"));
+        if (ch) {
+            ch->setDataTrans(new DataProvider(m_data,morse));
+            msg.setParam("error","play");
+        }
+        return true;
+    }
+    return false;
+}
+
+void MorseCode::encodeMorse(const char* text, String& morse)
+{
+    // Encode the text as Morse code
+    while (*text)
+        addTone(*text++, morse);
+}
+
+void MorseCode::addTone(char c, String& morse)
+{
+    // Add the Morse code for the given character to the output string
+    switch (c) {
+        case 'a': morse << ".- "; break;
+        case 'b': morse << "-... "; break;
+        case 'c': morse << "-.-. "; break;
+        case 'd': morse << "-.. "; break;
+        case 'e': morse << ". "; break;
+        case 'f': morse << "..-. "; break;
+        case 'g': morse << "--. "; break;
+        case 'h': morse << ".... "; break;
+        case 'i': morse << ".. "; break;
+        case 'j': morse << ".--- "; break;
+        case 'k': morse << "-.- "; break;
+        case 'l': morse << ".-.. "; break;
+        case 'm': morse << "-- "; break;
+        case 'n': morse << "-. "; break;
+        case 'o': morse << "--- "; break;
+        case 'p': morse << ".--. "; break;
+        case 'q': morse << "--.- "; break;
+        case 'r': morse << ".-. "; break;
+        case 's': morse << "... "; break;
+        case 't': morse << "- "; break;
+        case 'u': morse << "..- "; break;
+        case 'v': morse << "...- "; break;
+        case 'w': morse << ".-- "; break;
+        case 'x': morse << "-..- "; break;
+        case 'y': morse << "-.-- "; break;
+        case 'z': morse << "--.. "; break;
+        case '1': morse << ".---- "; break;
+        case '2': morse << "..--- "; break;
+        case '3': morse << "...-- "; break;
+        case '4': morse << "....- "; break;
+        case '5': morse << "..... "; break;
+        case '6': morse << "-.... "; break;
+        case '7': morse << "--... "; break;
+        case '8': morse << "---.. "; break;
+        case '9': morse << "----. "; break;
+        case '0': morse << "----- "; break;
+        case '.': morse << ".-.-.- "; break;
+        case ',': morse << "--..-- "; break;
+        case ':': morse << "---..."; break;
+        case '?': morse << "..--.."; break;
+        case '\'': morse << ".----."; break;
+        case '-': morse << "-....-"; break;
+        case '/': morse << "-..-."; break;
+        case '(': morse << "-.--."; break;
+        case ')': morse << "-.--.-"; break;
+        case '"': morse << ".-..-."; break;
+        case ' ': morse << " "; break;
+        default: morse << " "; break;
+    }
+}
+
+INIT_PLUGIN(MorseCode);
+
+
+This completes the MorseCode class. To use this module, you can send a "play" message to Yate with the "tone" parameter set to "morsecode" and the "text" parameter set to the text you want to play in Morse code. The module will then encode the text as Morse code and play it to the channel.
+```
+
+------------------------------------------------------
+
 
