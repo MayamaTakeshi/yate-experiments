@@ -398,5 +398,218 @@ This completes the MorseCode class. To use this module, you can send a "play" me
 ```
 
 ------------------------------------------------------
+2023/01/07 takeshi:
 
+Some experiments with ChatGPT:
 
+I want to write an internal module (writen in C and compiled as part of yate) to record an ongoing call between 2 SIP endpoints.
+
+To write an internal module for Yate (Yet Another Telephony Engine) in C that records a call between two SIP (Session Initiation Protocol) endpoints, you can follow these steps:
+
+    Implement the module in C as a shared library.
+
+    In your module, listen for SIP call events such as call.ringing, call.answer, and call.hangup using the Yate API.
+
+    When a call is answered, use the Yate API to start the RTP (Real-time Transport Protocol) media recording.
+
+    In your module, implement a function to store the recorded audio locally.
+
+    When the call is finished, use the Yate API to stop the recording and store the recorded audio locally.
+
+To compile your module as part of Yate, you will need to add it to the Yate build system and configure it to be built as part of Yate.
+
+I hope this helps! Let me know if you have any questions.
+
+How do I get the audio data?
+
+To get the audio data from an RTP (Real-time Transport Protocol) media stream in Yate (Yet Another Telephony Engine), you can use the Yate RTP API.
+
+Here's an example of how you might use the Yate RTP API to get the audio data in a Yate module:
+
+```
+#include <yatephone.h>
+#include <yateclass.h>
+#include <yatertp.h>
+
+using namespace TelEngine;
+
+class MyModule : public Module
+{
+public:
+    MyModule();
+    ~MyModule();
+    virtual void initialize();
+    virtual bool received(Message& msg, int id);
+
+private:
+    void startRecording();
+    void stopRecording();
+    bool getAudioData(DataBlock& data);
+
+private:
+    RTPReceiver* m_rtpReceiver;
+};
+
+MyModule::MyModule()
+    : Module("mymodule","misc"),
+      m_rtpReceiver(0)
+{
+}
+
+MyModule::~MyModule()
+{
+    TelEngine::destruct(m_rtpReceiver);
+}
+
+void MyModule::initialize()
+{
+    Output("Initializing MyModule");
+}
+
+bool MyModule::received(Message& msg, int id)
+{
+    if (id == CallRinging) {
+        // Start recording when call is answered
+        startRecording();
+    }
+    else if (id == CallHangup) {
+        // Stop recording when call is finished
+        stopRecording();
+    }
+    return false;
+}
+
+void MyModule::startRecording()
+{
+    // Create an RTPReceiver object to receive the RTP media stream
+    m_rtpReceiver = new RTPReceiver();
+
+    // Start receiving the RTP media stream
+    m_rtpReceiver->startReceive(msg);
+}
+
+void MyModule::stopRecording()
+{
+    // Stop receiving the RTP media stream
+    m_rtpReceiver->stopReceive();
+
+    // Delete the RTPReceiver object
+    TelEngine::destruct(m_rtpReceiver);
+}
+
+bool MyModule::getAudioData(DataBlock& data)
+{
+    // Check if we have an RTPReceiver object
+    if (!m_rtpReceiver)
+        return false;
+
+    // Get the next audio frame from the RTP media stream
+    return m_rtpReceiver->getData(data);
+}
+
+INIT_PLUGIN(MyModule);
+
+```
+
+In this example, the MyModule class implements a Yate module that starts and stops recording an RTP media stream using an RTPReceiver object. The getAudioData() function uses the RTPReceiver::getData() function to get the next audio frame from the RTP media stream.
+
+I hope this helps! Let me know if you have any questions.
+
+What is RTPReceiver?
+
+In Yate (Yet Another Telephony Engine), the RTPReceiver class is used to receive RTP (Real-time Transport Protocol) media streams.
+
+The RTPReceiver class provides functions for starting and stopping the receipt of an RTP media stream, and for getting the data (audio or video frames) from the stream.
+
+Here is the list of some important functions provided by the RTPReceiver class:
+
+    RTPReceiver::RTPReceiver(): Constructs an RTPReceiver object.
+    RTPReceiver::~RTPReceiver(): Destructs an RTPReceiver object.
+    bool RTPReceiver::startReceive(Message& msg): Starts receiving an RTP media stream. Returns true on success, false on failure.
+    void RTPReceiver::stopReceive(): Stops receiving an RTP media stream.
+    bool RTPReceiver::getData(DataBlock& data): Gets the next audio or video frame from the RTP media stream. Returns true if a frame was obtained, false if no frame was available.
+
+You can use an RTPReceiver object to receive an RTP media stream and get the data from the stream in a Yate module.
+
+I hope this helps! Let me know if you have any questions.
+
+How RTPReceiver know which media stream to get data from?
+
+In Yate (Yet Another Telephony Engine), the RTPReceiver class is used to receive RTP (Real-time Transport Protocol) media streams. When you create an RTPReceiver object and start receiving an RTP media stream using the RTPReceiver::startReceive() function, you need to specify the RTP media stream that you want to receive.
+
+You can specify the RTP media stream that you want to receive by passing a Message object to the RTPReceiver::startReceive() function. The Message object should contain the necessary information about the RTP media stream, such as the IP address and port of the RTP sender, the payload type, and the SSRC (Synchronization Source) of the stream.
+
+Here is an example of how you might use the RTPReceiver::startReceive() function to start receiving an RTP media stream in a Yate module:
+
+```
+
+void MyModule::startRecording(Message& msg)
+{
+    // Create an RTPReceiver object to receive the RTP media stream
+    m_rtpReceiver = new RTPReceiver();
+
+    // Start receiving the RTP media stream
+    m_rtpReceiver->startReceive(msg);
+}
+
+```
+
+In this example, the MyModule::startRecording() function creates an RTPReceiver object and starts receiving an RTP media stream by calling the RTPReceiver::startReceive() function and passing it a Message object. The Message object should contain the necessary information about the R
+
+Please show a Message containing the data required by startReceive().
+
+In Yate (Yet Another Telephony Engine), you can use a Message object to pass information about an RTP (Real-time Transport Protocol) media stream to the RTPReceiver::startReceive() function.
+
+Here is an example of a Message object that contains the necessary information about an RTP media stream:
+
+```
+Message msg("rtp.start");
+
+// Set the IP address and port of the RTP sender
+msg.addParam("ip", "192.168.1.100");
+msg.addParam("port", "5000");
+
+// Set the payload type
+msg.addParam("payload", "0");
+
+// Set the SSRC (Synchronization Source) of the stream
+msg.addParam("ssrc", "12345678");
+
+// Set the clock rate
+msg.addParam("clockrate", "8000");
+
+// Set the number of channels
+msg.addParam("channels", "1");
+
+```
+
+This Message object contains the following parameters:
+
+    ip: The IP address of the RTP sender.
+    port: The port of the RTP sender.
+    payload: The payload type of the RTP media stream.
+    ssrc: The SSRC (Synchronization Source) of the RTP media stream.
+    clockrate: The clock rate of the RTP media stream.
+    channels: The number of channels in the RTP media stream.
+
+You can pass this Message object to the RTPReceiver::startReceive() function to start receiving an RTP media stream.
+
+I hope this helps! Let me know if you have any questions.
+
+Does YATE has RTPTransmitter or RTPSender?
+
+Yes, Yate (Yet Another Telephony Engine) has an RTPTransmitter class that can be used to send RTP (Real-time Transport Protocol) media streams.
+
+The RTPTransmitter class provides functions for starting and stopping the transmission of an RTP media stream, and for sending audio or video frames to the stream.
+
+Here is the list of some important functions provided by the RTPTransmitter class:
+
+    RTPTransmitter::RTPTransmitter(): Constructs an RTPTransmitter object.
+    RTPTransmitter::~RTPTransmitter(): Destructs an RTPTransmitter object.
+    bool RTPTransmitter::startTransmit(Message& msg): Starts transmitting an RTP media stream. Returns true on success, false on failure.
+    void RTPTransmitter::stopTransmit(): Stops transmitting an RTP media stream.
+    bool RTPTransmitter::sendData(const DataBlock& data): Sends an audio or video frame to the RTP media stream. Returns true on success, false on failure.
+
+You can use an RTPTransmitter object to send an RTP media stream and send audio or video frames to the stream in a Yate module.
+
+--------------------------------------------------
