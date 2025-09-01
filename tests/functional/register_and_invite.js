@@ -162,18 +162,50 @@ async function test() {
 
     await z.wait([
         {
-            event: 'media_status',
+            event: 'media_update',
             call_id: oc.id,
-            status: 'setup_ok',
-            local_mode: 'sendrecv',
-            remote_mode: 'unknown', // Yate doesn't send a=sendrecv so we set remote_mode='unknown'
+            status: 'ok',
+            media: [
+              {
+                type: 'audio',
+                protocol: 'RTP/AVP',
+                local: {
+                  addr: '127.0.0.1',
+                  mode: 'sendrecv'
+                },
+                remote: {
+                  addr: '127.0.0.1',
+                  mode: 'unknown', // Yate doesn't send a=sendrecv so we set remote_mode='unknown'
+                },
+                fmt: [
+                  '0 PCMU/8000',
+                  '120 telephone-event/8000'
+                ]
+              }
+            ],
         },
         {
-            event: 'media_status',
+            event: 'media_update',
             call_id: ic.id,
-            status: 'setup_ok',
-            local_mode: 'sendrecv',
-            remote_mode: 'unknown', // Yate doesn't send a=sendrecv so we set remote_mode='unknown'
+            status: 'ok',
+            media: [
+              {
+                type: 'audio',
+                protocol: 'RTP/AVP',
+                local: {
+                  addr: '127.0.0.1',
+                  mode: 'sendrecv'
+                },
+                remote: {
+                  addr: '127.0.0.1',
+                  mode: 'unknown', // Yate doesn't send a=sendrecv so we set remote_mode='unknown'
+                },
+                fmt: [
+                  '0 PCMU/8000',
+                  '101 telephone-event/8000'
+                ]
+              }
+            ],
         },
         {
             event: 'response',
@@ -187,10 +219,11 @@ async function test() {
                 $fd: domain,
                 $tU: 'user2',
                 '$hdr(content-type)': 'application/sdp',
-                //$rb: '!{_}a=sendrecv', // Yate doesn't send a=sendrecv
             }),
         },
     ], 1000)
+
+    sip.call.start_inband_dtmf_detection(oc.id)
 
     sip.call.send_dtmf(oc.id, {digits: '1234', mode: 0})
     sip.call.send_dtmf(ic.id, {digits: '4321', mode: 1})
@@ -210,7 +243,7 @@ async function test() {
         },
     ], 2000)
 
-    sip.call.reinvite(oc.id, {hold: true})
+    sip.call.reinvite(oc.id, {media: [{type: 'audio', fields: ['a=sendonly']}]})
 
     await z.wait([
         {
@@ -229,15 +262,30 @@ async function test() {
             msg: sip_msg({
                 $rs: '200',
                 $rr: 'OK',
-                //$rb: '!{_}a=sendrecv', // Yate doesn't send a=sendrecv
             }),
         },
         {
-            event: 'media_status',
+            event: 'media_update',
             call_id: oc.id,
-            status: 'setup_ok',
-            local_mode: 'sendonly',
-            remote_mode: 'unknown', // Yate doesn't send a=recvonly so we set remote_mode='unknown'
+            status: 'ok',
+            media: [
+              {
+                type: 'audio',
+                protocol: 'RTP/AVP',
+                local: {
+                  addr: '127.0.0.1',
+                  mode: 'sendonly'
+                },
+                remote: {
+                  addr: '127.0.0.1',
+                  mode: 'recvonly'
+                },
+                fmt: [
+                  '0 PCMU/8000',
+                  '120 telephone-event/8000'
+                ]
+              }
+            ]
         },
     ], 500)
 
@@ -253,7 +301,7 @@ async function test() {
         },
     ], 2000)
 
-    sip.call.reinvite(ic.id, {hold: true})
+    sip.call.reinvite(ic.id, {media: [{type: 'audio', fields: ['a=sendonly']}]})
 
     await z.wait([
         {
@@ -275,11 +323,27 @@ async function test() {
             }),
         },
         {
-            event: 'media_status',
+            event: 'media_update',
             call_id: ic.id,
-            status: 'setup_ok',
-            local_mode: 'sendonly',
-            remote_mode: 'unknown',
+            status: 'ok',
+            media: [
+              {
+                type: 'audio',
+                protocol: 'RTP/AVP',
+                local: {
+                  addr: '127.0.0.1',
+                  mode: 'sendonly'
+                },
+                remote: {
+                  addr: '127.0.0.1',
+                  mode: 'recvonly'
+                },
+                fmt: [
+                  '0 PCMU/8000',
+                  '101 telephone-event/8000'
+                ]
+              }
+            ]
         },
     ], 500)
 
@@ -289,7 +353,8 @@ async function test() {
 
     await z.sleep(1000)
 
-    sip.call.reinvite(oc.id, {hold: false})
+    // now unhold leg1
+    sip.call.reinvite(oc.id)
 
     await z.wait([
         {
@@ -311,15 +376,32 @@ async function test() {
             }),
         },
         {
-            event: 'media_status',
+            event: 'media_update',
             call_id: oc.id,
-            status: 'setup_ok',
-            local_mode: 'sendrecv',
-            remote_mode: 'unknown',
+            status: 'ok',
+            media: [
+              {
+                type: 'audio',
+                protocol: 'RTP/AVP',
+                local: {
+                  addr: '127.0.0.1',
+                  mode: 'sendrecv'
+                },
+                remote: {
+                  addr: '127.0.0.1',
+                  mode: 'sendrecv'
+                },
+                fmt: [
+                  '0 PCMU/8000',
+                  '120 telephone-event/8000'
+                ]
+              }
+            ]
         },
     ], 500)
 
-    sip.call.reinvite(ic.id, {hold: false})
+    // now unhold leg2
+    sip.call.reinvite(ic.id)
 
     await z.wait([
         {
@@ -341,11 +423,27 @@ async function test() {
             }),
         },
         {
-            event: 'media_status',
+            event: 'media_update',
             call_id: ic.id,
-            status: 'setup_ok',
-            local_mode: 'sendrecv',
-            remote_mode: 'unknown',
+            status: 'ok',
+            media: [
+              {
+                type: 'audio',
+                protocol: 'RTP/AVP',
+                local: {
+                  addr: '127.0.0.1',
+                  mode: 'sendrecv'
+                },
+                remote: {
+                  addr: '127.0.0.1',
+                  mode: 'sendrecv'
+                },
+                fmt: [
+                  '0 PCMU/8000',
+                  '101 telephone-event/8000'
+                ]
+              }
+            ]
         },
     ], 500)
 
@@ -423,6 +521,7 @@ async function test() {
     tl.info("Success")
 
     sip.stop()
+    process.exit(0)
 }
 
 

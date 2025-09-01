@@ -4,73 +4,35 @@
 
 This repo documents our experiments with Yate (Yet Another Telephony Engine)
 
-## Preparation
+We use a Dockerfile to build a docker image containing yate, sngrep2 and node.
 
-### Installation of Yate from source in Ubuntu 20.04
+## Build the image
 ```
-sudo apt install build-essential
-
-sudo add-apt-repository ppa:rock-core/qt4
-sudo apt update
-sudo apt install qt4-dev-tools
- 
-mkdir -p ~/work/src/svn
-cd ~/work/src/svn
-mkdir yate
-cd yate
-svn checkout http://voip.null.ro/svn/yate/trunk
-cd trunk
-
-./autogen.sh 
-./configure
-make
-sudo make install-noapi #
-
-# obs: the above installs yate on /usr/local/bin/yate and creates /usr/local/etc/yate/ for configuration files.
-# However, in our test we will run yate and folder conf.d inside the yate/trunk build folder.
+./build_image.sh
 ```
-### Preserving Yate svn version
+## Start the container
 ```
-takeshi:trunk$ svn info
-Path: .
-Working Copy Root Path: /mnt/ssd/work/src/svn/yate/trunk
-URL: http://voip.null.ro/svn/yate/trunk
-Relative URL: ^/trunk
-Repository Root: http://voip.null.ro/svn/yate
-Repository UUID: acf43c95-373e-0410-b603-e72c3f656dc1
-Revision: 6528
-Node Kind: directory
-Schedule: normal
-Last Changed Author: marian
-Last Changed Rev: 6528
-Last Changed Date: 2021-11-26 03:02:25 +0900 (Fri, 26 Nov 2021)
+./start_container.sh
 ```
 
-### Enabling extmodule
+## Starting a tmux working session
+Inside the container do:
 ```
-cp conf.d/* ~/work/src/svn/yate/trunk/conf.d/
+./tmux_session.sh
+```
+## Running tests
+
+In the tmux session switch to window 'tests/functional' and run one of the tests like this:
+```
+node simple.js
 ```
 
-### Starting yate (from build folder)
-```
-./run -vvvvvv
-```
+Then switch to the window 'sngre2' and inspect the messages exchanged between the test script and yate.
 
-### Running tests
-
-First install node modules
-```
-npm install
-```
-
-Inside folder tests there js files. Each file correspond to a test.
-
-To run a test, do:
-```
-node tests/FILE_NAME
-```
+Also, switch to the window 'yate' and inspect its logs.
 
 To run all tests do:
 ```
 ./runtests
 ```
+Obs: however, currently, test subscribe_notify.js is failing (see https://github.com/MayamaTakeshi/yate-experiments/issues/2)

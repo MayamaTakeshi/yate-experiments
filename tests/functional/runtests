@@ -1,6 +1,6 @@
 #!/bin/bash
 
-for i in $(ls tests/*.js)
+for i in $(ls *.js)
 do
     node $i
     if [[ $? -ne 0 ]]

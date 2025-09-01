@@ -75,11 +75,27 @@ async function test() {
 
     await z.wait([
         {
-            event: 'media_status',
-            call_id: ic,
-            status: 'setup_ok',
-            local_mode: 'sendrecv',
-            remote_mode: 'unknown'
+            event: 'media_update',
+            call_id: ic.id,
+            status: 'ok',
+            media: [
+              {
+                type: 'audio',
+                protocol: 'RTP/AVP',
+                local: {
+                  addr: '127.0.0.1',
+                  mode: 'sendrecv'
+                },
+                remote: {
+                  addr: '127.0.0.1',
+                  mode: 'unknown'
+                },
+                fmt: [
+                  '0 PCMU/8000',
+                  '101 telephone-event/8000'
+                ]
+              }
+            ]
         },
     ], 1000)
 
@@ -126,6 +142,7 @@ async function test() {
     console.log("Success")
 
     sip.stop()
+    process.exit(0)
 }
 
 test()

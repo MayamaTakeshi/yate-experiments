@@ -1,0 +1,12 @@
+name: yate-experiments
+root: ~/src/git/yate-experiments
+
+windows:
+  - yate:
+    - cd /usr/local/src/git/yate
+    - sudo ./run -vvvvvv
+  - sngrep2:
+    - sudo sngrep2 -d any
+  - "tests/functional":
+    - cd ~/src/git/yate-experiments/tests/functional
+    - npm i
