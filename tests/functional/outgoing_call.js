@@ -12,26 +12,18 @@ const connection = extmodule.connect({host: '127.0.0.1', port: 5040}, () => {
     console.log('connected')
 })
 
-connection.watch('call.route', (msg) => {
-    console.log('call.route')
-    console.log(msg)
-})
-
-connection.watch('call.execute', (msg) => {
-    console.log('call.execute')
-    console.log(msg)
-})
-
 connection.watch('chan.dtmf', (msg) => {
     z.push_event({
         event: 'chan.dtmf',
-        data: msg,
+        msg,
     })
 })
 
+let callee = '05012341234'
+let caller = '09011112222'
 
 async function test() {
-    await z.sleep(1000) // wait a little because connection.subscribe() needs to complete
+    //await z.sleep(1000) 
 
     sip.dtmf_aggregation_on(500)
 
@@ -49,13 +41,15 @@ async function test() {
     console.log("t1", t1)
 
     connection.dispatch('call.execute', {
-            direct: `sip/sip:user1@${t1.address}:${t1.port}`,
+            direct: `sip/sip:${callee}@${t1.address}:${t1.port}`,
             callto: "tone/dial;tonedetect_in=yes",
-            caller: "0312341234",
+            caller,
         },  (msg) => {
-        console.log("call.execute callback")
-        console.dir(msg)
-    })
+        z.push_event({
+            event: 'call.execute.response',
+            msg,
+        })
+    });
 
     await z.wait([
         {
@@ -63,9 +57,13 @@ async function test() {
             transport_id: t1.id,
             call_id: m.collect('ic'),
             msg: sip_msg({
-                '$rU': 'user1',
-                '$fU': '0312341234',
+                '$rU': callee,
+                '$fU': caller,
             }),
+        },
+        {
+            event: 'call.execute.response',
+            msg: '',
         },
     ], 1000)
 
@@ -104,7 +102,7 @@ async function test() {
     await z.wait([
         {
             event: 'chan.dtmf',
-            data: {
+            msg: {
                 text: '1',
             },
         }
