@@ -2,26 +2,41 @@ const tl = require('tracing-log')
 
 const { Yate, YateMessage, YateChannel } = require("next-yate");
 
-let yate = new Yate({host: "127.0.0.1"});
-yate.init();
-
-async function onCallRoute(msg) {
-    tl.info('onCallRoute')
-    //console.dir(msg)
-
-    msg.retValue("sip/sip:b@127.0.0.1:5092")
-    return true
-}
-
-yate.install(onCallRoute, 'call.route');
 var sip = require ('sip-lab')
 var Zeq = require('@mayama/zeq')
 var z = new Zeq()
 var m = require('data-matching')
 var sip_msg = require('sip-matching')
 
+let yate = new Yate({host: "127.0.0.1"});
+yate.init();
+
+async function onCallRoute(msg) {
+    tl.info('onCallRoute')
+    z.push_event({
+        event: 'chan.route',
+        msg,
+    })
+
+    return true
+}
+
+
+// yate sends this before or after 'call.route' unpredictably and might resend 'call.route' if we don't reply fast enough
+let trying_filter = {
+    event: 'response',
+    method: 'INVITE',
+    msg: sip_msg({
+        $rs: '100',
+        $rr: 'Trying',
+    }),
+}
+
+z.add_event_filter(trying_filter)
+
 async function test() {
-    await z.sleep(1000) // wait a little because yate.install() needs to complete
+    await yate.install(onCallRoute, 'call.route');
+    //await z.sleep(1000) // wait a little because yate.install() needs to complete
 
     //sip.set_log_level(6)
     sip.dtmf_aggregation_on(500)
@@ -43,36 +58,54 @@ async function test() {
 
     flags = 0
 
-    oc = sip.call.create(t1.id, {from_uri: 'sip:a@t', to_uri: 'sip:b@127.0.0.1:5060'})
+    user_a = 'user1'
+    user_b = 'user2'
+    domain = 'test1.com'
 
+    // here we create the oc (outgoing call)
+    oc = sip.call.create(t1.id, {from_uri: `sip:${user_a}@${domain}`, to_uri: `sip:${user_b}@127.0.0.1`})
+
+    // the call will be informed by yate to us for routing decision (routing means, what to do with it)
     await z.wait([
         {
-            event: 'response',
-            call_id: oc.id,
-            method: 'INVITE',
-            msg: sip_msg({
-                $rs: '100',
-                $rr: 'Trying',
-                '$(hdrcnt(via))': 1,
-                '$hdr(call-id)': m.collect('sip_call_id'),
-                $fU: 'a',
-                $fd: 't',
-                $tU: 'b',
-            }),
+            event: 'chan.route',
+            msg: m.collect('msg', m.partial_match({
+                module: 'sip',
+                status: 'incoming',
+                answered: false,
+                direction: 'incoming',
+                caller: user_a,
+                called: user_b,
+                connection_id: 'general',
+                sip_from: `sip:${user_a}@${domain}`,
+                sip_to: `sip:${user_b}@!{_}`,
+                newcall: true,
+                domain,
+            })),
         },
+    ], 1000)
+
+    // We instruct yate to route the call to another user 
+    z.store.msg.retValue(`sip/sip:${user_b}@${t2.address}:${t2.port}`)
+
+    // Then it will invite the other user
+    await z.wait([
         {
             event: "incoming_call",
             call_id: m.collect("call_id"),
         },
     ], 2000)
 
+    // now we organize the ic (incoming call) object
     var ic = {
         id: z.store.call_id,
         sip_call_id: z.store.sip_call_id,
     }
 
+    // then we answer the call
     sip.call.respond(ic.id, {code: 200, reason: 'OK'})
 
+    // then we get usual media_update events and '200 OK' at oc 
     await z.wait([
         {
             event: 'media_update',
@@ -128,19 +161,24 @@ async function test() {
                 $rs: '200',
                 $rr: 'OK',
                 '$(hdrcnt(VIA))': 1,
-                $fU: 'a',
-                $fd: 't',
-                $tU: 'b',
+                $fU: user_a,
+                $fd: domain,
+                $tU: user_b,
                 '$hdr(content-type)': 'application/sdp',
             }),
         },
     ], 1000)
 
+    // here we start inband DTMF detection at the oc side
     sip.call.start_inband_dtmf_detection(oc.id)
 
+    // then we send RFC2833 digits from the oc side
     sip.call.send_dtmf(oc.id, {digits: '1234', mode: 0})
+
+    // then we send inband digits from the ic side
     sip.call.send_dtmf(ic.id, {digits: '4321', mode: 1})
 
+    // then we wait for the dtmf events
     await z.wait([
         {
             event: 'dtmf',
@@ -156,6 +194,10 @@ async function test() {
         },
     ], 2000)
 
+    // now we remove the filter as we don't need it anymmore
+    z.remove_event_filter(trying_filter)
+
+    // now we test reivinte
     sip.call.reinvite(oc.id, {media: [{type: 'audio', fields: ['a=sendonly']}]})
 
     await z.wait([

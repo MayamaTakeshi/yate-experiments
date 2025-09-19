@@ -10,3 +10,5 @@ windows:
   - "tests/functional":
     - cd ~/src/git/yate-experiments/tests/functional
     - npm i
+  - rmanager:
+    - telnet localhost 5038

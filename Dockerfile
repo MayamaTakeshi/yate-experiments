@@ -68,7 +68,7 @@ RUN echo $user_name ALL=\(root\) NOPASSWD:ALL > /etc/sudoers.d/$user_name \
 
 RUN echo "wireshark-common wireshark-common/install-setuid boolean true" | debconf-set-selections
 RUN apt-get -y update 
-RUN apt install -y tshark
+RUN apt install -y tshark telnet
 
 USER $user_name
 
