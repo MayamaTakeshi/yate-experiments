@@ -78,6 +78,49 @@ And to make a call to one of the above numbers I do:
 baresip -e 'dsip:99991008@0.0.0.0:5060
 ```
 
+You can also call '12345678' and the call will be handled by this javascript file:
+
+MayamaTakeshi@takeshi-desktop:yate$ cat scripts/hello.js 
+if (message.called == "12345678") {
+    Channel.callTo("wave/play//usr/local/src/git/yate/audio/hello_good_morning.mulaw");
+    Channel.callTo("wave/record//tmp/recording.mulaw",{"maxlen": 80000, "blocking": 1, "nosilence": 1}); // attention maxlen is not duration! It is max number of bytes to be written to file.
+    Channel.callTo("wave/play//tmp/recording.mulaw");
+}
+
+This is done this way:
+
+In conf.d/javascript we have this line:
+```
+routing=hello.js
+```
+This will instruct the javascript module to handle 'call.route' requests in case other modules with higher priority don't handle them.
+
+So, in our case, the other module is regexroute, and since the number '12345678' doesn't get matched by regexroute.conf, the javascript module has the chance to process it.
+
+## Yate Javascript
+
+### Some gotchas
+
+Do not use code like this:
+```
+if(message.called != '12345678') {
+  return
+}
+Channel.callTo("wave/play//usr/local/src/git/yate/audio/hello_good_morning.mulaw");
+```
+
+The above will not work. I don't know why.
+
+Instead, do:
+```
+if(message.called == '12345678') {
+  Channel.callTo("wave/play//usr/local/src/git/yate/audio/hello_good_morning.mulaw");
+}
+```
+
+Channel.callTo("wave/play//usr/local/src/git/yate/audio/hello_good_morning.mulaw");
+`
+
 ## BeF's Yate Cookbook
 
 Some good tips here:
@@ -99,7 +142,7 @@ In the telnet window issue ths command:
 sniffer on
 ```
 
-This will make yate output things like this:
+This will make yate output things (in the yate window) like this:
 ```
 2025-09-19_16:09:38.504166 Sniffed 'user.auth' time=1758265778.504132 age=0.000025
   thread=0x64c61c86a350 'YSIP EndPoint'
