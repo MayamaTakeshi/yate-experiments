@@ -1,3 +1,4 @@
+const assert = require('assert')
 const tl = require('tracing-log')
 
 const { Yate, YateMessage, YateChannel } = require("next-yate");
@@ -8,52 +9,53 @@ yate.init();
 let location = {}
 
 async function onCallRoute(msg) {
-    tl.info('onCallRoute')
-    //tl.info(JSON.stringify(msg))
-
-    var key = `${msg.called}@${msg.domain}`
-    var address = location[key]
-    if(address) {
-        tl.info(`key=${key} found address=${address}`)
-        msg.retValue(address)
-        return true
-    } else {
-        tl.info(`key=${key} not found`)
-        return false
-    }
+    return new Promise((resolve, reject) => {
+        z.push_event({
+            event: 'call.route',
+            msg,
+            resolve,
+            reject,
+        })
+    })
 }
 
-async function onAuth(msg) {
-    tl.info('onAuth')
-    return true
+async function onUserAuth(msg) {
+    return new Promise((resolve, reject) => {
+        z.push_event({
+            event: 'user.auth',
+            msg,
+            resolve,
+            reject,
+        })
+    })
 }
 
-async function onRegister(msg) {
-    tl.info('onRegister')
-    //tl.info(JSON.stringify(msg))
-    var key = `${msg.username}@${msg.domain}`
-    location[key] = msg.data
-
-    tl.info(`location=${JSON.stringify(location)}`)
-    return true
+async function onUserRegister(msg) {
+    return new Promise((resolve, reject) => {
+        z.push_event({
+            event: 'user.register',
+            msg,
+            resolve,
+            reject,
+        })
+    })
 }
 
-async function onUnregister(msg) {
-    tl.info('onUnregister')
-    //tl.info(JSON.stringify(msg))
-
-    var key = `${msg.username}@${msg.domain}`
-    delete location[key]
-
-    tl.info(`location=${JSON.stringify(location)}`)
-    return true
+async function onUserUnregister(msg) {
+    return new Promise((resolve, reject) => {
+        z.push_event({
+            event: 'user.unregister',
+            msg,
+            resolve,
+            reject,
+        })
+    })
 }
 
 yate.install(onCallRoute, 'call.route');
-
-yate.install(onAuth, 'user.auth')
-yate.install(onRegister, 'user.register')
-yate.install(onUnregister, 'user.unregister')
+yate.install(onUserAuth, 'user.auth')
+yate.install(onUserRegister, 'user.register')
+yate.install(onUserUnregister, 'user.unregister')
 
 var sip = require ('sip-lab')
 var Zeq = require('@mayama/zeq')
@@ -85,35 +87,89 @@ async function test() {
     tl.info("t1", t1)
     tl.info("t2", t2)
 
-
-    const a1 = sip.account.create(t1.id, {
-        domain, 
-        server: yate_server,
-        username: 'user1',
-        password: 'pass1',
-    })
-
-    const a2 = sip.account.create(t2.id, {
+    const a_user2 = sip.account.create(t2.id, {
         domain, 
         server: yate_server,
         username: 'user2',
         password: 'pass2',
     })
 
-    sip.account.register(a1, {auto_refresh: true})
-    sip.account.register(a2, {auto_refresh: true})
+    sip.account.register(a_user2, {auto_refresh: true})
+
+    await z.wait([
+        {
+            event: 'user.auth',
+            msg: {
+                protocol: 'sip',
+                method: 'REGISTER',
+                uri: 'sip:127.0.0.1:5060',
+                ip_host: '127.0.0.1',
+                ip_port: '5092',
+                ip_transport: 'UDP',
+                address: '127.0.0.1:5092',
+                connection_id: 'general',
+                connection_reliable: false,
+                newcall: false,
+                domain,
+                number: 'user2',
+                expires: '60',
+                handlers: 'monitoring:1,regfile:100,next-yate:100'
+            },
+            resolve: m.collect('resolve')
+        },
+    ], 1000)
+
+    // resolve the user.auth promise saying the user is authorized
+    z.store.resolve(true)
+
+    delete z.store.resolve
+
+    await z.wait([
+        {
+            event: 'user.register',
+            msg: m.collect('msg', {
+                number: 'user2',
+                sip_uri: 'sip:127.0.0.1:5060',
+                expires: '60',
+                newcall: false,
+                domain,
+                username: 'user2',
+                driver: 'sip',
+                data: 'sip/sip:user2@127.0.0.1:5092',
+                ip_host: '127.0.0.1',
+                ip_port: '5092',
+                ip_transport: 'UDP',
+                address: '127.0.0.1:5092',
+                connection_id: 'general',
+                connection_reliable: false,
+                route_params: 'oconnection_id',
+                oconnection_id: 'general',
+                sip_to: 'sip:user2@127.0.0.1:5092',
+                sip_contact: '<sip:user2@127.0.0.1:5092>',
+                sip_expires: '60',
+                sip_allow: 'MESSAGE, SUBSCRIBE, NOTIFY, REFER, INVITE, ACK, BYE, CANCEL, UPDATE, PRACK',
+                handlers: 'monitoring:1,regfile:100,next-yate:100'
+            }),
+            resolve: m.collect('resolve')
+        },
+    ], 1000)
+
+    // resolve the promise for user.register (but I am not sure if it is really needed)
+    z.store.resolve(true)
+
+    delete z.store.resolve
+
+    var msg = z.store.msg
+
+    delete z.store.msg
+
+    var key = `${msg.username}@${msg.domain}`
+    location[key] = msg.data
 
     await z.wait([
         {
             event: 'registration_status',
-            account_id: a1.id,
-            code: 200,
-            reason: 'OK',
-            expires: 60
-        },
-        {
-            event: 'registration_status',
-            account_id: a2.id,
+            account_id: a_user2.id,
             code: 200,
             reason: 'OK',
             expires: 60
@@ -130,6 +186,28 @@ async function test() {
 
     await z.wait([
         {
+            event: 'user.auth',
+            msg: {
+              protocol: 'sip',
+              method: 'INVITE',
+              uri: 'sip:user2@127.0.0.1:5060',
+              ip_host: '127.0.0.1',
+              ip_port: '5090',
+              ip_transport: 'UDP',
+              address: '127.0.0.1:5090',
+              connection_id: 'general',
+              connection_reliable: false,
+              newcall: true,
+              domain,
+              //id: 'sip/6',
+              caller: 'user1',
+              called: 'user2',
+              //billid: '1758315927-4',
+              handlers: 'monitoring:1,regfile:100,next-yate:100'
+            },
+            resolve: m.collect('resolve')
+        },
+        {
             event: 'response',
             call_id: oc.id,
             method: 'INVITE',
@@ -143,6 +221,77 @@ async function test() {
                 $tU: 'user2',
             }),
         },
+    ], 1000)
+
+    // resolve the user.auth promise saying the user is authorized
+    z.store.resolve(true)
+
+    delete z.store.resolve
+
+    await z.wait([
+        {
+            event: 'call.route',
+            msg: m.collect('msg', {
+              //id: 'sip/7',
+              module: 'sip',
+              status: 'incoming',
+              address: '127.0.0.1:5090',
+              //billid: '1758315927-5',
+              answered: false,
+              direction: 'incoming',
+              //callid: 'sip/e5470fe6-01c8-4ff1-b771-3aefd34d74b2/44f37fde-1a11-4a41-aebd-75bcc145091a/',
+              caller: 'user1',
+              called: 'user2',
+              antiloop: '19',
+              ip_host: '127.0.0.1',
+              ip_port: '5090',
+              ip_transport: 'UDP',
+              connection_id: 'general',
+              connection_reliable: false,
+              sip_uri: 'sip:user2@127.0.0.1:5060',
+              sip_from: 'sip:user1@test1.com',
+              sip_to: 'sip:user2@127.0.0.1',
+              //sip_callid: 'e5470fe6-01c8-4ff1-b771-3aefd34d74b2',
+              device: '',
+              sip_contact: '<sip:user1@127.0.0.1:5090>',
+              sip_allow: 'MESSAGE, SUBSCRIBE, NOTIFY, REFER, INVITE, ACK, BYE, CANCEL, UPDATE',
+              'sip_content-type': 'application/sdp',
+              newcall: true,
+              domain,
+              username: '',
+              xsip_nonce_age: '0',
+              rtp_addr: '127.0.0.1',
+              media: 'yes',
+              formats: 'mulaw',
+              transport: 'RTP/AVP',
+              rtp_rfc2833: '120',
+              rtp_port: '10000',
+              'sdp_BW-TIAS': '64000',
+              sdp_rtcp: '10001 IN IP4 127.0.0.1',
+              sdp_sendrecv: '',
+              rtp_forward: 'possible',
+              handlers: 'javascript:15,cdrbuild:50,fileinfo:90,subscription:100,sip:100,iax:100,regexroute:100,jingle:100,analog:100,sig:100,regfile:100,next-yate:100'
+            }),
+            resolve: m.collect('resolve')
+          },
+    ], 1000)
+
+    msg = z.store.msg
+
+    delete z.store.msg
+
+    key = `${msg.called}@${msg.domain}`
+    var address = location[key]
+
+    // confirm we got the address in previous registration handling
+    assert(address)
+
+    msg.retValue(address)
+    z.store.resolve(true)
+
+    delete z.store.resolve
+    
+    await z.wait([
         {
             event: "incoming_call",
             call_id: m.collect("call_id"),
@@ -498,20 +647,78 @@ async function test() {
 
     await z.sleep(1000)
 
-    sip.account.unregister(a1)
-    sip.account.unregister(a2)
+    sip.account.unregister(a_user2)
+
+    await z.wait([
+        {
+            event: 'user.auth',
+            msg: {
+                protocol: 'sip',
+                method: 'REGISTER',
+                uri: 'sip:127.0.0.1:5060',
+                ip_host: '127.0.0.1',
+                ip_port: '5092',
+                ip_transport: 'UDP',
+                address: '127.0.0.1:5092',
+                connection_id: 'general',
+                connection_reliable: false,
+                newcall: false,
+                domain,
+                number: 'user2',
+                expires: '0',
+                handlers: 'monitoring:1,regfile:100,next-yate:100'
+            },
+            resolve: m.collect('resolve'),
+        },
+    ], 1000)
+
+    // resolve the user.auth promise saying the user is authorized
+    z.store.resolve(true)
+
+    delete z.store.resolve
+
+    await z.wait([
+        {
+            event: 'user.unregister',
+            msg: m.collect('msg', {
+                number: 'user2',
+                sip_uri: 'sip:127.0.0.1:5060',
+                //sip_callid: 'a3e9244e-349f-4810-a91e-f6bb6693bdea',
+                expires: '0',
+                newcall: false,
+                domain: 'test1.com',
+                username: 'user2',
+                driver: 'sip',
+                data: 'sip/sip:user2@127.0.0.1:5092',
+                ip_host: '127.0.0.1',
+                ip_port: '5092',
+                ip_transport: 'UDP',
+                address: '127.0.0.1:5092',
+                connection_id: 'general',
+                connection_reliable: false,
+                sip_contact: '<sip:user2@127.0.0.1:5092>',
+                sip_expires: '0',
+                handlers: 'regfile:100,next-yate:100'
+            }),
+            resolve: m.collect('resolve'),
+        },
+    ], 1000)
+
+    msg = z.store.msg
+
+    delete z.store.msg
+
+    // resolving the user.unregister promive. Not sure if it is really necessary
+    z.store.resolve(true)
+
+    var key = `${msg.username}@${msg.domain}`
+    assert(location[key])
+    delete location[key]
 
     await z.wait([
         {
             event: 'registration_status',
-            account_id: a1.id,
-            code: 200,
-            reason: 'OK',
-            expires: 0
-        },
-        {
-            event: 'registration_status',
-            account_id: a2.id,
+            account_id: a_user2.id,
             code: 200,
             reason: 'OK',
             expires: 0
