@@ -21,5 +21,8 @@ docker run \
   --net=host \
   -v /etc/localtime:/etc/localtime:ro \
   -v `pwd`/..:/home/$git_user_name/src/git \
+  -v `pwd`/conf.d:/usr/local/src/git/yate/conf.d \
+  -v `pwd`/audio/:/usr/local/src/git/yate/audio \
+  -v `pwd`/scripts/:/usr/local/src/git/yate/scripts \
   -w /home/$git_user_name/src/git/yate-experiments \
   yate-experiments

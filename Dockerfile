@@ -126,4 +126,4 @@ export TERM=xterm-256color
 . ~/.nvm/nvm.sh
 EOF
 
-COPY conf.d/* /usr/local/src/git/yate/conf.d/
+#COPY conf.d/* /usr/local/src/git/yate/conf.d/

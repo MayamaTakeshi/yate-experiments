@@ -82,4 +82,64 @@ Some good tips here:
 
 https://github.com/bef/yate-cookbook
 
+## Convert audio files to format usable by yate
+
+Yate cannot handle wav files so you need to convert to a format like mulaw:
+
+```
+sox hello.wav -t raw -r 8000 -e mu-law -b 8 hello.mulaw
+```
+
+## Watching messages
+
+In the telnet window issue ths command:
+```
+sniffer on
+```
+
+This will make yate output things like this:
+```
+2025-09-19_16:09:38.504166 Sniffed 'user.auth' time=1758265778.504132 age=0.000025
+  thread=0x64c61c86a350 'YSIP EndPoint'
+  data=(nil)
+  retval='(null)'
+  param['protocol'] = 'sip'
+  param['method'] = 'INVITE'
+  param['uri'] = 'sip:1234@0.0.0.0'
+  param['ip_host'] = '192.168.0.113'
+  param['ip_port'] = '49408'
+  param['ip_transport'] = 'UDP'
+  param['address'] = '192.168.0.113:49408'
+  param['connection_id'] = 'general'
+  param['connection_reliable'] = 'false'
+  param['newcall'] = 'true'
+  param['domain'] = 'test1.com'
+  param['device'] = 'baresip v3.7.0 (x86_64/Linux)'
+  param['id'] = 'sip/5'
+  param['caller'] = '100'
+  param['called'] = '1234'
+  param['billid'] = '1758265039-9'
+2025-09-19_16:09:38.504247 Returned false 'user.auth' delay=0.000097
+  thread=0x64c61c86a350 'YSIP EndPoint'
+  data=(nil)
+  retval='(null)'
+  param['protocol'] = 'sip'
+  param['method'] = 'INVITE'
+  param['uri'] = 'sip:1234@0.0.0.0'
+  param['ip_host'] = '192.168.0.113'
+  param['ip_port'] = '49408'
+  param['ip_transport'] = 'UDP'
+  param['address'] = '192.168.0.113:49408'
+  param['connection_id'] = 'general'
+  param['connection_reliable'] = 'false'
+  param['newcall'] = 'true'
+  param['domain'] = 'test1.com'
+  param['device'] = 'baresip v3.7.0 (x86_64/Linux)'
+  param['id'] = 'sip/5'
+  param['caller'] = '100'
+  param['called'] = '1234'
+  param['billid'] = '1758265039-9'
+  param['handlers'] = 'monitoring:1,regfile:100'
+```
+
 
