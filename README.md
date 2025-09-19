@@ -73,9 +73,6 @@ In my ~/.baresip/accounts I have:
 ```
 And to make a call to one of the above numbers I do:
 ```
-takeshi@takeshi-desktop:~$ tail  ~/.baresip/accounts 
-
-```
 baresip -e 'dsip:99991008@0.0.0.0:5060
 ```
 
