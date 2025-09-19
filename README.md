@@ -57,7 +57,7 @@ It is configuration is at: /usr/local/src/git/yate/conf.d/regexroute.conf
 
 In it you can see a list of destination number that will just generate tones:
 ```
-MayamaTakeshi@takeshi-desktop:yate-experiments$ grep 9999 /usr/local/src/git/yate/conf.d/regexroute.conf 
+MayamaTakeshi@takeshi-desktop:yate$ grep 9999 conf.d/regexroute.conf 
 ^99991001$=tone/dial
 ^99991002$=tone/busy
 ^99991003$=tone/ring
@@ -66,7 +66,9 @@ MayamaTakeshi@takeshi-desktop:yate-experiments$ grep 9999 /usr/local/src/git/yat
 ^99991006$=tone/outoforder
 ^99991007$=tone/milliwatt
 ^99991008$=tone/info
+^99991010$=wave/play//usr/local/src/git/yate/audio/hello_good_morning.mulaw
 ```
+
 In my ~/.baresip/accounts I have:
 ```
 <sip:100@test1.com>;auth_pass=001;noreg
