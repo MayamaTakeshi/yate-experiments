@@ -226,7 +226,7 @@ and send
 status cdrbuild
 ```
 yate will output something like this:
-
+```
 2025-09-20_13:50:11.563601 Sniffed 'engine.status' time=1758343811.563558 age=0.000027
   thread=0x7e9ba8000c30 'RManager Connection'
   data=(nil)
