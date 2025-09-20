@@ -72,6 +72,10 @@ RUN apt install -y tshark telnet sox tcpdump ngrep
 
 RUN apt install -y sip-tester
 
+RUN apt install -y python3-pip
+
+RUN pip3 install scapy
+
 USER $user_name
 
 RUN echo "set-option -g default-shell /bin/bash" >> ~/.tmux.conf

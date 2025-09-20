@@ -12,5 +12,7 @@ windows:
     - npm i
   - rmanager:
     - sleep 5
-    - echo "Relevant commands to use: 'sniffer on' and 'status cdrbuild'"
+    - echo Relevant command to is 'status cdrbuild' to peridically check active calls
     - telnet localhost 5038
+  - top:
+    - top

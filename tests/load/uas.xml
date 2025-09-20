@@ -65,6 +65,13 @@ a=rtpmap:98 telephone-event/8000
         crlf="true">
   </recv>
 
+  <nop>
+    <action>
+      <exec play_pcap_audio="sine.pcap"/>
+    </action>
+  </nop>
+
+
   <recv request="BYE">
   </recv>
 

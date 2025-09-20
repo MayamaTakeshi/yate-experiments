@@ -7,7 +7,7 @@ windows:
     - sudo ./run
   - rmanager:
     - sleep 5
-    - echo "Relevant commands to use: 'sniffer on' and 'status cdrbuild'"
+    - echo Relevant commands to use are 'sniffer on' and 'status cdrbuild'
     - telnet localhost 5038
   - sipp_uac:
     - cd tests/load

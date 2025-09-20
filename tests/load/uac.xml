@@ -89,6 +89,12 @@ Content-Length: 0
     ]]>
   </send>
 
+  <nop>
+    <action>
+      <exec play_pcap_audio="sine.pcap"/>
+    </action>
+  </nop>
+
   <!-- Random call duration before BYE: 0–6 seconds -->
   <pause distribution="uniform" min="0" max="6000"/>
 
