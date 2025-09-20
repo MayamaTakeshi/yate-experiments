@@ -28,7 +28,7 @@ Inside the container do:
 ```
 The above will start a tmux session as specified in tmux_session.yml.
 
-To simplify and focus on our interests, we will have only the modules regexroute, extmodule and tonegen enabled.
+To simplify and focus on our interests, we will have only the modules regexroute, extmodule and javascript enabled.
 
 ## Running tests
 
@@ -77,7 +77,7 @@ Quick description of the test scriipts:
 - media_functions.js: shows how to handle media events step-by-step instead of concatenating all media commands (counter-example of echo_test.js).
 - media_functions_with_callto_callbacks.js: similar to media_functions.js but pushing events from next_wait callTo callbacks.
 - outgoing_call.js: shows how to originate an outgoing call from within yate (for example, for click2call implementation).
-- regster_and_invite.js: shows how to SIP REGISTER a SIP UA and make a call to it
+- register_and_invite.js: shows how to SIP REGISTER a SIP UA and make a call to it
 - subscribe_notify.js: (not working). it was suppose to show how to do a SIP SUBSCRIBE and get a SIP NOTIFY from yate.
 
 ## Testing with baresip
@@ -116,7 +116,7 @@ You can also call '12345678' and the call will be handled by this javascript fil
 MayamaTakeshi@takeshi-desktop:yate$ cat scripts/hello.js 
 if (message.called == "12345678") {
     Channel.callTo("wave/play//usr/local/src/git/yate/audio/hello_good_morning.mulaw");
-    Channel.callTo("wave/record//tmp/recording.mulaw",{"maxlen": 80000, "blocking": 1, "nosilence": 1}); // attention maxlen is not duration! It is max number of bytes to be written to file.
+    Channel.callTo("wave/record//tmp/recording.mulaw",{"maxlen": 80000, "blocking": 1}); // attention maxlen is not duration! It is max number of bytes to be written to file.
     Channel.callTo("wave/play//tmp/recording.mulaw");
 }
 ```
@@ -333,7 +333,3 @@ alive in yate after a failed test).
 
 - The experiments (tests/functional/*.js files) likely are watching all messages for all calls in the system. Since this is for testing and learning, this is OK. But in a production system we would not use this and
 more likely would ask yate to restrict notification for specific channels we are handling in the script.
-
-- In the load test, prepare sipp uac and uas to send RTP (we currently only load test SIP signaling).
-
-
