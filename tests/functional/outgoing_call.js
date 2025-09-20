@@ -23,8 +23,6 @@ let callee = '05012341234'
 let caller = '09011112222'
 
 async function test() {
-    //await z.sleep(1000) 
-
     sip.dtmf_aggregation_on(500)
 
     sip.set_codecs("PCMU/8000/1:128")

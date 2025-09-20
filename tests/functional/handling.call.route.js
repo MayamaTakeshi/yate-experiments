@@ -8,19 +8,10 @@ var z = new Zeq()
 var m = require('data-matching')
 var sip_msg = require('sip-matching')
 
+var utils = require('./lib/utils.js')
+
 let yate = new Yate({host: "127.0.0.1"});
 yate.init();
-
-async function onCallRoute(msg) {
-    tl.info('onCallRoute')
-    z.push_event({
-        event: 'chan.route',
-        msg,
-    })
-
-    return true
-}
-
 
 // yate sends this before or after 'call.route' unpredictably and might resend 'call.route' if we don't reply fast enough
 let trying_filter = {
@@ -35,8 +26,9 @@ let trying_filter = {
 z.add_event_filter(trying_filter)
 
 async function test() {
-    await yate.install(onCallRoute, 'call.route');
-    //await z.sleep(1000) // wait a little because yate.install() needs to complete
+    await utils.hangup_all_yate_calls(yate)
+
+    await utils.set_yate_msg_trap(yate, 'call.route', z);
 
     //sip.set_log_level(6)
     sip.dtmf_aggregation_on(500)
@@ -68,7 +60,7 @@ async function test() {
     // the call will be informed by yate to us for routing decision (routing means, what to do with it)
     await z.wait([
         {
-            event: 'chan.route',
+            event: 'call.route',
             msg: m.collect('msg', m.partial_match({
                 module: 'sip',
                 status: 'incoming',
@@ -82,11 +74,16 @@ async function test() {
                 newcall: true,
                 domain,
             })),
+            resolve: m.collect('resolve')
         },
     ], 1000)
 
-    // We instruct yate to route the call to another user 
+    // We instruct yate to route the call to another sip endppoint
     z.store.msg.retValue(`sip/sip:${user_b}@${t2.address}:${t2.port}`)
+
+    z.store.resolve(true)
+
+    delete z.store.resolve
 
     // Then it will invite the other user
     await z.wait([

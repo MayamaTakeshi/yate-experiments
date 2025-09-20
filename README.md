@@ -134,6 +134,11 @@ Yate cannot handle wav files so you need to convert to a format like mulaw:
 ```
 sox hello.wav -t raw -r 8000 -e mu-law -b 8 hello.mulaw
 ```
+You can do this more comfortably using the script wav_to_mulaw.sh:
+```
+$ ./wav_to_mulaw.sh dtmf.123.wav
+Success: file dtmf.123.wav.mulaw was craeted.
+```
 
 ## Watching messages
 
@@ -186,5 +191,113 @@ This will make yate output things (in the yate window) like this:
   param['billid'] = '1758265039-9'
   param['handlers'] = 'monitoring:1,regfile:100'
 ```
+
+## How to get active calls in the system
+
+By testing with telnet connection we verified that if we enable sniffer:
+```
+sniffer on
+```
+and send
+```
+status cdrbuild
+```
+yate will output something like this:
+
+2025-09-20_13:50:11.563601 Sniffed 'engine.status' time=1758343811.563558 age=0.000027
+  thread=0x7e9ba8000c30 'RManager Connection'
+  data=(nil)
+  retval='(null)'
+  param['module'] = 'cdrbuild'
+  param['cmd_address'] = '127.0.0.1:46836'
+  param['cmd_machine'] = 'false'
+  param['cmd_width'] = '229'
+  param['cmd_height'] = '58'
+  param['cmd_admin'] = 'true'
+2025-09-20_13:50:11.563910 Returned false 'engine.status' delay=0.000340
+  thread=0x7e9ba8000c30 'RManager Connection'
+  data=(nil)
+  retval='name=cdrbuild,type=cdr,format=Status|Caller|Called|BillId|Duration;cdrs=0,hungup=0;
+'
+  param['module'] = 'cdrbuild'
+  param['cmd_address'] = '127.0.0.1:46836'
+  param['cmd_machine'] = 'false'
+  param['cmd_width'] = '229'
+  param['cmd_height'] = '58'
+yate.output("Hello World!");
+  param['cmd_admin'] = 'true'
+  param['handlers'] = 'engine:90,callgen:100,moh:100,cdrcombine:100,rex_debug:100,g722webrtc:100,isaccodec:100,cdrbuild:100,ilbcwebrtc:100,accfile:100,regfile:100,jbfeatures:110,jabber:110,analogdetect:110,sigtransport:110,subscription:110,mgcpca:110,hep3_capture:110,ciscosm:110,mux:110,openssl:110,javascript:110,socks:110,zlibcompress:110,gvoice:110,sip:110,analyzer:110,tone:110,extmodule:110,callfork:110,fileinfo:110,stun:110,iax:110,enumroute:110,regexroute:110,pbx:110,dumb:110,jingle:110,wave:110,yrtp:110,tonedetect:110,conf:110,filetransfer:110,analog:110,sig:110,snmpagent:110,mgcpgw:110,queuesnotify:110,queues:110,cache:110,mrcp:110,users:110,presence:110,monitoring:110,register:110,park:110,sipfeatures:110'
+```
+So the message was catched by module cdrbuild than then reported the results.
+
+It informed a list of active calls in the retval.
+
+In this case there were no active calls.
+
+Then I executed a test creating a leg1/leg2 call and while it was alive I executed this node.js script:
+```
+$ cat a.js 
+const {Yate, YateMessage} = require("next-yate");
+let yate = new Yate({host: "127.0.0.1", trackname: "myscript"});
+yate.init();
+yate.output("Hello World!");
+
+let m = new YateMessage('engine.status', {module: 'cdrbuild'});
+yate.dispatch(m)
+.then((msg) => {
+    console.log(msg._retvalue)
+})
+
+$ node a.js 
+name=cdrbuild,type=cdr,format=Status|Caller|Called|BillId|Duration;cdrs=2,hungup=0;sip/5=incoming|user1|user2|1758343601-3|3,sip/6=outgoing|user1|user2|1758343601-3|3
+```
+We confirmed the above in the yate output:
+
+This caused yate to output:
+```
+2025-09-20_14:34:10.543018 <extmodule:INFO> Listener 'sample' got connection from '127.0.0.1:37784'                                                                                                                                  
+2025-09-20_14:34:10.543046 <extmodule:ALL> ExtModChan[sample] args='127.0.0.1:37784' io=(0x7e9ba00030d0) chan=((nil)) created [0x7e9ba0003110]                                                                                       
+2025-09-20_14:34:11.047319 Hello World!                                                                           
+2025-09-20_14:34:11.047460 Sniffed 'engine.status' time=1758346450.000000 age=1.047454
+  thread=0x5c7d83950020 'Engine Worker'
+  data=(nil)
+  retval='(null)'
+  param['module'] = 'cdrbuild'
+2025-09-20_14:34:11.047617 Returned false 'engine.status' delay=1.047615
+  thread=0x5c7d83950020 'Engine Worker'
+  data=(nil)
+  retval='name=cdrbuild,type=cdr,format=Status|Caller|Called|BillId|Duration;cdrs=2,hungup=0;sip/5=incoming|user1|user2|1758343601-3|3,sip/6=outgoing|user1|user2|1758343601-3|3
+'
+  param['module'] = 'cdrbuild'
+  param['handlers'] = 'engine:90,callgen:100,moh:100,cdrcombine:100,rex_debug:100,g722webrtc:100,isaccodec:100,cdrbuild:100,ilbcwebrtc:100,accfile:100,regfile:100,jbfeatures:110,jabber:110,analogdetect:110,sigtransport:110,subscr
+iption:110,mgcpca:110,hep3_capture:110,ciscosm:110,mux:110,openssl:110,javascript:110,socks:110,zlibcompress:110,gvoice:110,sip:110,analyzer:110,tone:110,extmodule:110,callfork:110,fileinfo:110,stun:110,iax:110,enumroute:110,rege
+xroute:110,pbx:110,dumb:110,jingle:110,wave:110,yrtp:110,tonedetect:110,conf:110,filetransfer:110,analog:110,sig:110,snmpagent:110,mgcpgw:110,queuesnotify:110,queues:110,cache:110,mrcp:110,users:110,presence:110,monitoring:110,re
+gister:110,park:110,sipfeatures:110'
+
+```
+For completeness here is the ngrep output showing the low level yate protocol messages:
+```
+$ sudo ngrep -d any -q -W byline 'cdrbuild' 
+interface any
+filter: (ip || ip6)
+match: cdrbuild
+
+
+T 127.0.0.1:37784 -> 127.0.0.1:5040 [AP] #40472
+%%>message:1758346450.81922459:1758346450:engine.status::module=cdrbuild
+
+
+T 127.0.0.1:5040 -> 127.0.0.1:37784 [AP] #40482
+%%<message:1758346450.81922459:false:engine.status:name=cdrbuild,type=cdr,format=Status|Caller|Called|BillId|Duration;cdrs=2,hungup=0;sip/5=incoming|user1|user2|1758343601-3|3,sip/6=outgoing|user1|user2|1758343601-3|3%M%J:module=cdrbuild:handlers=engine%z90,callgen%z100,moh%z100,cdrcombine%z100,rex_debug%z100,g722webrtc%z100,isaccodec%z100,cdrbuild%z100,ilbcwebrtc%z100,accfile%z100,regfile%z100,jbfeatures%z110,jabber%z110,analogdetect%z110,sigtransport%z110,subscription%z110,mgcpca%z110,hep3_capture%z110,ciscosm%z110,mux%z110,openssl%z110,javascript%z110,socks%z110,zlibcompress%z110,gvoice%z110,sip%z110,analyzer%z110,tone%z110,extmodule%z110,callfork%z110,fileinfo%z110,stun%z110,iax%z110,enumroute%z110,regexroute%z110,pbx%z110,dumb%z110,jingle%z110,wave%z110,yrtp%z110,tonedetect%z110,conf%z110,filetransfer%z110,analog%z110,sig%z110,snmpagent%z110,mgcpgw%z110,queuesnotify%z110,queues%z110,cache%z110,mrcp%z110,users%z110,presence%z110,monitoring%z110,register%z110,park%z110,sipfeatures%z110
+```
+
+So we can see the 2 cdrs (channels).
+The important thing in them is the channel id ("sip/5", "sip/6") that can be used to issue exiternal commands like 'call.drop' (we need this for example to terminate all calls that might remain
+alive in yate after a failed test).
+
+## TODO
+
+The experiments (tests/functional/*.js files) likely are watching all messages for all calls in the system. Since this is for testing and learning, this is OK. But in a production system we would not use this and
+more likely would ask yate to restrict notification for specific channels we are handling in the script.
 
 

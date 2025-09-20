@@ -1,15 +1,52 @@
 #!/bin/bash
 
-for i in $(ls *.js)
+tests=($(ls *.js | sort))
+
+successful=()
+
+failed=()
+
+for i in "${tests[@]}"
 do
+    sleep 0.2
     node $i
     if [[ $? -ne 0 ]]
     then
         echo "$i failed"
-        exit 1
+        failed+=($i)
+    else
+        successful+=($i)
     fi
 done
 
 echo
-echo "Success. All tests passed"
 
+if [[ ${#failed[@]} -eq 0 ]]
+then
+    echo "Finished. All test passed:"
+else
+    echo "Finished:"
+fi
+
+echo
+
+echo "Successful tests:"
+
+for i in "${successful[@]}"
+do
+    echo "  - $i"
+done
+
+echo
+
+if [[ ${#failed[@]} -ne 0 ]]
+then
+    echo "Failed tests:"
+
+    for i in "${failed[@]}"
+    do
+        echo "  - $i"
+    done
+
+    echo
+fi

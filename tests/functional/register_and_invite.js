@@ -1,61 +1,40 @@
 const assert = require('assert')
 const tl = require('tracing-log')
 
+const crypto = require('crypto');
+
+function md5(s) {
+  return crypto.createHash('md5').update(s).digest('hex');
+}
+
+/**
+ * Verify SIP Digest authentication response (no qop).
+ *
+ * @param {Object} params
+ * @param {string} params.username - The SIP username
+ * @param {string} params.password - The user’s password (shared secret)
+ * @param {string} params.realm - The realm from the challenge
+ * @param {string} params.nonce - The nonce from the challenge
+ * @param {string} params.method - SIP method (e.g., REGISTER, INVITE)
+ * @param {string} params.uri - The URI from the Authorization header
+ * @param {string} params.response - The response from the Authorization header
+ * @returns {boolean} true if valid, false otherwise
+ */
+function checkDigestAuth({ username, password, realm, nonce, method, uri, response }) {
+  const ha1 = md5(`${username}:${realm}:${password}`);
+  const ha2 = md5(`${method}:${uri}`);
+  const expected = md5(`${ha1}:${nonce}:${ha2}`);
+  return expected === response;
+}
+
 const { Yate, YateMessage, YateChannel } = require("next-yate");
+
+var utils = require('./lib/utils.js')
 
 let yate = new Yate({host: "127.0.0.1"});
 yate.init();
 
 let location = {}
-
-async function onCallRoute(msg) {
-    return new Promise((resolve, reject) => {
-        z.push_event({
-            event: 'call.route',
-            msg,
-            resolve,
-            reject,
-        })
-    })
-}
-
-async function onUserAuth(msg) {
-    return new Promise((resolve, reject) => {
-        z.push_event({
-            event: 'user.auth',
-            msg,
-            resolve,
-            reject,
-        })
-    })
-}
-
-async function onUserRegister(msg) {
-    return new Promise((resolve, reject) => {
-        z.push_event({
-            event: 'user.register',
-            msg,
-            resolve,
-            reject,
-        })
-    })
-}
-
-async function onUserUnregister(msg) {
-    return new Promise((resolve, reject) => {
-        z.push_event({
-            event: 'user.unregister',
-            msg,
-            resolve,
-            reject,
-        })
-    })
-}
-
-yate.install(onCallRoute, 'call.route');
-yate.install(onUserAuth, 'user.auth')
-yate.install(onUserRegister, 'user.register')
-yate.install(onUserUnregister, 'user.unregister')
 
 var sip = require ('sip-lab')
 var Zeq = require('@mayama/zeq')
@@ -67,7 +46,12 @@ const yate_server = "127.0.0.1:5060"
 const domain = 'test1.com'
 
 async function test() {
-    await z.sleep(1000) // wait a little because yate.install() needs to complete
+    await utils.hangup_all_yate_calls(yate)
+
+    await utils.set_yate_msg_trap(yate, 'call.route', z);
+    await utils.set_yate_msg_trap(yate, 'user.auth', z);
+    await utils.set_yate_msg_trap(yate, 'user.register', z);
+    await utils.set_yate_msg_trap(yate, 'user.unregister', z);
 
     //sip.set_log_level(6)
     sip.dtmf_aggregation_on(500)
@@ -87,11 +71,13 @@ async function test() {
     tl.info("t1", t1)
     tl.info("t2", t2)
 
+    const password = 'fake'
+
     const a_user2 = sip.account.create(t2.id, {
         domain, 
         server: yate_server,
         username: 'user2',
-        password: 'pass2',
+        password,
     })
 
     sip.account.register(a_user2, {auto_refresh: true})
@@ -119,7 +105,58 @@ async function test() {
         },
     ], 1000)
 
-    // resolve the user.auth promise saying the user is authorized
+    // resolve the user.auth passing the challenge password
+    z.store.resolve(password)
+
+    delete z.store.resolve
+
+    // user.auth will now arrive with the challenge response
+
+    await z.wait([
+        {
+            event: 'user.auth',
+            msg: m.collect('msg', {
+                protocol: 'sip',
+                username: 'user2',
+                realm: 'Yate',
+                //nonce: 'f4f2cbb5021af61a50ccfb10db278939.1758325681',
+                //response: '6675a21b7fc4475c4b9fac29c15468b8',
+                method: 'REGISTER',
+                uri: 'sip:127.0.0.1:5060',
+                ip_host: '127.0.0.1',
+                ip_port: '5092',
+                ip_transport: 'UDP',
+                address: '127.0.0.1:5092',
+                connection_id: 'general',
+                connection_reliable: false,
+                newcall: false,
+                domain,
+                number: 'user2',
+                expires: '60',
+                handlers: 'monitoring:1,regfile:100,next-yate:100'
+            }),
+            resolve: m.collect('resolve')
+        },
+    ], 1000)
+
+    var msg = z.store.msg
+
+    delete z.store.msg
+
+    // confirm the response is correct
+    const authOk = checkDigestAuth({
+        username: msg.username,
+        password: password,
+        realm: msg.realm,
+        nonce: msg.nonce,
+        method: 'REGISTER',
+        uri: 'sip:127.0.0.1:5060',
+        response: msg.response,
+    });
+
+    assert(authOk)
+
+    // resolve user.auth promise indicating the user is authorized
     z.store.resolve(true)
 
     delete z.store.resolve
@@ -176,13 +213,7 @@ async function test() {
         },
     ], 1000)
 
-    oc = sip.call.create(t1.id, {from_uri: `sip:user1@${domain}`, to_uri: `sip:user2@${yate_server}`, request_uri: `sip:user2@${yate_server}`, 
-        auth: {
-            realm: domain,
-            username: 'user1',
-            password: 'pass1',
-        },
-    })
+    oc = sip.call.create(t1.id, {from_uri: `sip:user1@${domain}`, to_uri: `sip:user2@${yate_server}`, request_uri: `sip:user2@${yate_server}`})
 
     await z.wait([
         {
@@ -223,7 +254,7 @@ async function test() {
         },
     ], 1000)
 
-    // resolve the user.auth promise saying the user is authorized
+    // resolve the user.auth promise saying the user is authorized (it could be for example an internal gateway that doesn't require auth)
     z.store.resolve(true)
 
     delete z.store.resolve
@@ -253,13 +284,13 @@ async function test() {
               sip_to: 'sip:user2@127.0.0.1',
               //sip_callid: 'e5470fe6-01c8-4ff1-b771-3aefd34d74b2',
               device: '',
-              sip_contact: '<sip:user1@127.0.0.1:5090>',
+              //sip_contact: '<sip:user1@127.0.0.1:5090>',
               sip_allow: 'MESSAGE, SUBSCRIBE, NOTIFY, REFER, INVITE, ACK, BYE, CANCEL, UPDATE',
               'sip_content-type': 'application/sdp',
               newcall: true,
               domain,
-              username: '',
-              xsip_nonce_age: '0',
+              //username: '',
+              //xsip_nonce_age: '0',
               rtp_addr: '127.0.0.1',
               media: 'yes',
               formats: 'mulaw',

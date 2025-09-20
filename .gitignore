@@ -102,3 +102,6 @@ dist
 
 # TernJS port file
 .tern-port
+
+# It seems this file is created automatically by yate
+conf.d/snmp_data.conf
