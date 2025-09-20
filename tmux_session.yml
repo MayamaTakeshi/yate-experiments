@@ -12,4 +12,5 @@ windows:
     - npm i
   - rmanager:
     - sleep 5
+    - echo "Relevant commands to use: 'sniffer on' and 'status cdrbuild'"
     - telnet localhost 5038
