@@ -34,7 +34,7 @@ To simplify and focus on our interests, we will have only the modules regexroute
 
 In the tmux session switch to window 'tests/functional' and run one of the tests like this:
 ```
-node simple.js
+node echo_test.js
 ```
 
 Then switch to the window 'sngrep2' and inspect the messages exchanged between the test script and yate.
@@ -45,7 +45,30 @@ To run all tests do:
 ```
 ./runtests
 ```
-Obs: however, currently, test subscribe_notify.js is failing (see https://github.com/MayamaTakeshi/yate-experiments/issues/2)
+Sample execution:
+```
+MayamaTakeshi@takeshi-desktop:functional$ ./runtests 
+... ABRIDGED ...
+
+wait (subscribe_notify.js:170) timed out
+subscribe_notify.js failed
+
+Finished:
+
+Successful tests:
+  - echo_test.js
+  - handling.call.route.js
+  - media_functions.js
+  - media_functions_full_next_yate.js
+  - outgoing_call.js
+  - register_and_invite.js
+
+Failed tests:
+  - subscribe_notify.js
+
+MayamaTakeshi@takeshi-desktop:functional$ 
+```
+Obs:currently, test subscribe_notify.js is failing (see https://github.com/MayamaTakeshi/yate-experiments/issues/2)
 
 ## Testing with baresip
 
@@ -297,7 +320,9 @@ alive in yate after a failed test).
 
 ## TODO
 
-The experiments (tests/functional/*.js files) likely are watching all messages for all calls in the system. Since this is for testing and learning, this is OK. But in a production system we would not use this and
+- The experiments (tests/functional/*.js files) likely are watching all messages for all calls in the system. Since this is for testing and learning, this is OK. But in a production system we would not use this and
 more likely would ask yate to restrict notification for specific channels we are handling in the script.
+
+- In the load test, prepare sipp uac and uas to send RTP (we currently only load test SIP signaling).
 
 

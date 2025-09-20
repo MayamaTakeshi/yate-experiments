@@ -1,0 +1,17 @@
+name: yate-load-test
+root: ~/src/git/yate-experiments/tests/load
+
+windows:
+  - yate:
+    - cd /usr/local/src/git/yate
+    - sudo ./run
+  - rmanager:
+    - sleep 5
+    - telnet localhost 5038
+  - sipp_uac:
+    - cd tests/load
+    - ./start_sipp_uac.sh
+  - sipp_uas:
+    - cd tests/load
+    - ./start_sipp_uas.sh
+

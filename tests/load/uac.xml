@@ -1,0 +1,124 @@
+<?xml version="1.0" encoding="ISO-8859-1" ?>
+<!DOCTYPE scenario SYSTEM "sipp.dtd">
+
+<scenario name="VS3000 origination">
+  <!-- You must supply a file containing data for injection -->
+  <!-- field0 : remote username -->
+  <!-- field1 : local displayname -->
+  <!-- field2 : local username -->
+  <!-- Sample
+SEQUENTIAL
+05012341234;Anonymous;09045468819
+  -->
+  <!-- arguments to sipp must include: -->
+  <!-- -i : local_ip -->
+  <!-- -p : local_port -->
+  <!-- -sf : scenario file -->
+  <!-- -inf : injection data file -->
+  <!-- -d : delay (call duration) in milliseconds  -->
+  <!-- Ex.: sipp -i 192.168.2.122 -p 6060 -sf uac.xml -inf data.txt -d 1000 192.168.2.123 -->
+
+ 
+  <!-- Call sipp like this: -->
+  <!-- -->
+  
+  <send retrans="500">
+    <![CDATA[
+
+INVITE sip:[field0]@[remote_ip] SIP/2.0
+Via: SIP/2.0/[transport] [local_ip]:[local_port];rport;branch=[branch]
+From: "[field1]"<sip:[field2]@[local_ip];user=phone>;tag=[pid]SIPpTag00[call_number]
+To: <sip:[field0]@[remote_ip]>
+Call-ID: [call_id]
+CSeq: 20 INVITE
+Contact: <sip:[field1]@[local_ip]:[local_port]>
+Max-Forwards: 66
+User-Agent: VS4000/SIP Ver1.0.0
+Subject: VS4000 PBX
+Expires: 120
+Allow: INVITE, ACK, UPDATE, INFO, CANCEL, BYE, PRACK, OPTIONS, REFER, SUBSCRIBE, NOTIFY, MESSAGE
+Content-Type: application/sdp
+Content-Length:   [len]
+
+v=0
+o=VS3000 0 0 IN IP[local_ip_type] [local_ip]
+s=SIP CALL
+c=IN IP[media_ip_type] [media_ip]
+t=0 0
+m=audio [media_port] RTP/AVP 0 18 101
+a=sendrecv
+a=rtpmap:18 G729/8000
+a=rtpmap:101 telephone-event/8000
+a=ptime:20
+
+    ]]>
+  </send>
+  <!-- Yes, there are extra spaces between Content-Length: and [len] -->
+  <!-- That's how it was at the captured packet -->
+  
+  <recv response="100" optional="true">
+  </recv>
+
+  <recv response="180" optional="true">
+  </recv>
+
+  <recv response="183" optional="true">
+  </recv>
+
+  <!-- By adding rrs="true" (Record Route Sets), the route sets         -->
+  <!-- are saved and used for following messages sent. Useful to test   -->
+  <!-- against stateful SIP proxies/B2BUAs.                             -->
+  <recv response="200" rrs="true">
+  </recv>
+
+  <send>
+    <![CDATA[
+
+ACK [next_url] SIP/2.0
+Via: SIP/2.0/[transport] [local_ip]:[local_port];rport;branch=[branch-5]
+[routes]
+[last_From:]
+[last_To:]
+[last_Call-ID:]
+CSeq: 20 ACK
+Contact: <sip:[field1]@[local_ip]:[local_port]>
+Max-Forwards: 5
+User-Agent: VS4000/SIP Ver1.0.0
+Content-Length: 0
+
+    ]]>
+  </send>
+
+  <!-- Random call duration before BYE: 0–6 seconds -->
+  <pause distribution="uniform" min="0" max="6000"/>
+
+  <!-- The 'crlf' option inserts a blank line in the statistics report. -->
+  <send retrans="500">
+    <![CDATA[
+
+BYE [next_url] SIP/2.0
+Via: SIP/2.0/[transport] [local_ip]:[local_port];rport;branch=[branch-1]
+[last_From:]
+[last_To:]
+[last_Call-ID:]
+[routes]
+Contact: <sip:[field1]@[local_ip]:[local_port]>
+CSeq: 803 BYE
+Max-Forwards: 70
+User-Agent: ATA
+Content-Length: 0
+
+    ]]>
+  </send>
+
+  <recv response="200" crlf="true">
+  </recv>
+
+  <!-- definition of the response time repartition table (unit is ms)   -->
+  <ResponseTimeRepartition value="10, 20, 30, 40, 50, 100, 150, 200"/>
+
+  <!-- definition of the call length repartition table (unit is ms)     -->
+  <CallLengthRepartition value="10, 50, 100, 500, 1000, 5000, 10000"/>
+
+</scenario>
+

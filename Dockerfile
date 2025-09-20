@@ -70,6 +70,8 @@ RUN echo "wireshark-common wireshark-common/install-setuid boolean true" | debco
 RUN apt-get -y update 
 RUN apt install -y tshark telnet sox tcpdump ngrep
 
+RUN apt install -y sip-tester
+
 USER $user_name
 
 RUN echo "set-option -g default-shell /bin/bash" >> ~/.tmux.conf
