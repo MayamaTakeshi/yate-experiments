@@ -59,7 +59,7 @@ Successful tests:
   - echo_test.js
   - handling.call.route.js
   - media_functions.js
-  - media_functions_full_next_yate.js
+  - media_functions_with_callto_callbacks.js
   - outgoing_call.js
   - register_and_invite.js
 
@@ -69,6 +69,16 @@ Failed tests:
 MayamaTakeshi@takeshi-desktop:functional$ 
 ```
 Obs:currently, test subscribe_notify.js is failing (see https://github.com/MayamaTakeshi/yate-experiments/issues/2)
+
+Quick description of the test scriipts:
+
+- echo_test.js: shows how to concatenate a list of media commands using next-yate facilities.
+- handling.call.route.js: show how to watch for 'call.route' msg to wait for incoming call and send the call to another sip endpoint.
+- media_functions.js: shows how to handle media events step-by-step instead of concatenating all media commands (counter-example of echo_test.js).
+- media_functions_with_callto_callbacks.js: similar to media_functions.js but pushing events from next_wait callTo callbacks.
+- outgoing_call.js: shows how to originate an outgoing call from within yate (for example, for click2call implementation).
+- regster_and_invite.js: shows how to SIP REGISTER a SIP UA and make a call to it
+- subscribe_notify.js: (not working). it was suppose to show how to do a SIP SUBSCRIBE and get a SIP NOTIFY from yate.
 
 ## Testing with baresip
 
