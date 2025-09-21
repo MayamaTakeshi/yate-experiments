@@ -185,6 +185,12 @@ if(message.called == '12345678') {
 }
 ```
 
+Also, check the yate output for things like this indicating errors:
+```
+2025-09-22_08:40:37.085364 Initializing module Javascript
+2025-09-22_08:40:37.085607 <javascript:WARN> Failed to parse script: /usr/local/src/git/yate/scripts/routing.js
+```
+
 ## Convert audio files to format usable by yate
 
 Yate cannot handle wav files so you need to convert to a format like mulaw:
