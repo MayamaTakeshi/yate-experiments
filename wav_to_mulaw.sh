@@ -21,7 +21,7 @@ fi
 
 wav_file=$1
 
-mulaw_file=`basename $wav_file`.mulaw
+mulaw_file=`basename $wav_file ".wav"`.mulaw
 
 sox $wav_file -t raw -r 8000 -e mu-law -b 8 $mulaw_file
 
