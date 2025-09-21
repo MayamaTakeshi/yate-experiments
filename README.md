@@ -352,16 +352,19 @@ more likely would ask yate to restrict notification for specific channels we are
 
 ## Findings
 
-- while load testing with sipp, the test was terminated without sending BYE to the calls and these calls stayed in the 'status cdrbuild' output. 
+### dead calls
+
+while load testing with sipp, the test was terminated without sending BYE to the calls and these calls stayed in the 'status cdrbuild' output. 
 So these are dead calls. The sipp scenarios don't use session timers and so probably these callwill stay in yate memory forever.
 This might not happen in prod as we probably have session timers there but this is not critical because we can just remove such calls periodicaly using msg 'call.drop'.
 
-- Not tested yet but it seems we can drop calls using the telnet connection as its help shows: drop {chan|*|all} [reason]
+### drop calls
+Uot tested yet but it seems we can drop calls using the telnet connection as its help shows: drop {chan|*|all} [reason]
 
-- It seems it supports MRCP:
+### MRCP support:
 ```
 2025-09-21_07:44:59.467847 <ALL> Plugin::Plugin("mrcp",false) [0x75340b37d280]
 2025-09-21_07:44:59.467862 Loaded module MRCP
 ```
-
+So the module is built but the mrcp.conf.sample is nowhere to be found. So if this actually works, we would need to get configuration detail from source code.
 
