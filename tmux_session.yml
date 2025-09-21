@@ -1,4 +1,4 @@
-name: dev
+name: yate-experiments
 root: ~/src/git/yate-experiments
 
 windows:
@@ -7,12 +7,10 @@ windows:
     - sudo ./run -vvvvvv
   - sngrep2:
     - sudo sngrep2 -d any
-  - "tests/functional":
+  - tests:
     - cd ~/src/git/yate-experiments/tests/functional
     - npm i
   - rmanager:
     - sleep 5
-    - echo Relevant command to is 'status cdrbuild' to peridically check active calls
+    - echo Use 'sniffer on' to enable msg logging in yate and when calls are ongoing use 'status cdrbuild' to check their details
     - telnet localhost 5038
-  - top:
-    - top

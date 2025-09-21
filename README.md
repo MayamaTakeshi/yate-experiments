@@ -30,6 +30,12 @@ Inside the container do:
 ```
 The above will start a tmux session as specified in tmux_session.yml.
 
+You will yave the following windows:
+  - yate: yate running and outputting logs
+  - sngrep2: sip msg flow visualizer
+  - tests: bash opened at the tests/functional folder
+  - rmanager: telnet connected to yate to permit to send commands to it (https://docs.yate.ro/wiki/Rmanager)
+
 To simplify and focus on our interests, we will have only the modules regexroute, extmodule and javascript enabled.
 
 ## Running tests
@@ -128,7 +134,7 @@ In my ~/.baresip/accounts I have:
 ```
 And to make a call to one of the above numbers I do:
 ```
-baresip -e 'dsip:99991008@0.0.0.0:5060
+baresip -e 'dsip:99991008@0.0.0.0:5060'
 ```
 
 You can also call '12345678' and the call will be handled by this javascript file:
@@ -194,12 +200,12 @@ Success: file dtmf.123.wav.mulaw was craeted.
 
 ## Watching messages
 
-In the telnet window issue ths command:
+In the rmanager window issue ths command:
 ```
 sniffer on
 ```
 
-This will make yate output things (in the yate window) like this:
+This will make yate output things (in the yate window) like these:
 ```
 2025-09-19_16:09:38.504166 Sniffed 'user.auth' time=1758265778.504132 age=0.000025
   thread=0x64c61c86a350 'YSIP EndPoint'
@@ -250,7 +256,7 @@ so it should be easy to understand how yate message architecture works (but log 
 
 In yate, there is a module called cdrbuild that monitors calls.
 
-In the telnet window (remember to input 'sniffer on' to see msgs in the yate output) you can input 'status cdrbuild' and will get cdr info:
+In the rmanager window (remember to input 'sniffer on' to see msgs in the yate output) you can input 'status cdrbuild' and will get cdr info:
 
 ```
 status cdrbuild
@@ -357,6 +363,36 @@ alive in yate after a failed test).
 - The experiments (tests/functional/*.js files) likely are watching all messages for all calls in the system. Since this is for testing and learning, this is OK. But in a production system we would not use this and
 more likely would ask yate to restrict notification for specific channels we are handling in the script.
 
+## Programming
+
+Yate is based on the concept of messages being published and passed to interested modules according to priority: 
+
+https://docs.yate.ro/wiki/Messages
+
+https://docs.yate.ro/wiki/Standard_Messages
+
+So we can write our own modules subscribing to messages, publishing messages and handling messages passed to us by the yate engine.
+
+Yate is written in C++ so the easiest and most efficient approach would be to write modules in C++.
+
+However, for simple programming tasks we can just use the extmodule interface which permits an external module to talk with yate via a tcp socket.
+
+This way, you can write apps in any language you like: 
+
+node.js:
+  https://github.com/0LEG0/next-yate/tree/master?tab=readme-ov-file#featured-ivr-example-using-yatechannel
+
+python:
+  https://github.com/eventphone/python-yate/tree/master/examples
+
+golaing:
+  https://github.com/lonli078/go-yate
+  https://github.com/rukavina/yatego
+
+The yate protocol is text-based and very simple: https://docs.yate.ro/wiki/External_module_command_flow
+
+So you could easily write a yate protocol module for your favorite language.
+
 ## Findings
 
 ### Dead calls
@@ -367,7 +403,7 @@ This might not happen in prod as we probably have session timers there but this 
 
 ### Drop calls
 
-I the telnet connection you can drop ongoing calls by using: drop {chan|*|all} [reason]
+Using the rmanager you can drop ongoing calls by using: drop {chan|*|all} [reason]
 
 ### MRCP support:
 ```
@@ -375,8 +411,4 @@ I the telnet connection you can drop ongoing calls by using: drop {chan|*|all} [
 2025-09-21_07:44:59.467862 Loaded module MRCP
 ```
 So the module is built but the mrcp.conf.sample is nowhere to be found. So if this actually works, we would need to get configuration details from source code.
-
-### Python module
-
-But I have not tested it yet: https://github.com/eventphone/python-yate
 
