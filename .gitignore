@@ -105,3 +105,7 @@ dist
 
 # It seems this file is created automatically by yate
 conf.d/snmp_data.conf
+
+conf.d/Makefile
+conf.d/Makefile.in
+

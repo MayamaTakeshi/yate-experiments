@@ -65,7 +65,7 @@ async function test() {
 
     await z.sleep(1000)
 
-    var fax_file = "received.tiff"
+    var fax_file = "/tmp/received_by_test_script.tiff"
 
     // transmit_on_idle: true/true: OK, true/false: OK, false/true: OK, false/false: NG
     sip.call.start_fax(oc.id, {is_sender: false, file: fax_file, transmit_on_idle: true})
