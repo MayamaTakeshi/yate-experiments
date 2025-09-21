@@ -368,3 +368,6 @@ Uot tested yet but it seems we can drop calls using the telnet connection as its
 ```
 So the module is built but the mrcp.conf.sample is nowhere to be found. So if this actually works, we would need to get configuration detail from source code.
 
+### Python module
+
+But I have not tested it: https://github.com/eventphone/python-yate
