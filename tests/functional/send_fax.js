@@ -1,3 +1,5 @@
+const { Yate, YateMessage, YateChannel } = require("next-yate");
+
 var sip = require ('sip-lab')
 var Zeq = require('@mayama/zeq')
 var z = new Zeq()
@@ -7,7 +9,14 @@ var sdp = require('sdp-matching')
 var fs = require('fs')
 var assert = require('assert')
 
+var utils = require('./lib/utils.js')
+
+let yate = new Yate({host: "127.0.0.1"});
+yate.init();
+
 async function test() {
+    await utils.hangup_all_yate_calls(yate)
+
     //sip.set_log_level(6)
     sip.dtmf_aggregation_on(500)
 

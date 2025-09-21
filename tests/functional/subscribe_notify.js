@@ -3,6 +3,8 @@
 // 2) we must support resource.notify (see https://docs.yate.ro/wiki/Resource.notify)
 const tl = require('tracing-log')
 
+const { Yate, YateMessage, YateChannel } = require("next-yate");
+
 const sip = require ('sip-lab')
 const Zeq = require('@mayama/zeq')
 const z = new Zeq()
@@ -10,6 +12,11 @@ const m = require('data-matching')
 const sip_msg = require('sip-matching')
 
 const extmodule = require('yate-extmodule')
+
+var utils = require('./lib/utils.js')
+
+let yate = new Yate({host: "127.0.0.1"});
+yate.init();
 
 const connection = extmodule.connect({host: '127.0.0.1', port: 5040}, () => {
     tl.info('connected')
@@ -81,6 +88,8 @@ connection.subscribe('user.unregister', 50, (message, retval) => {
 
 
 async function test() {
+    await utils.hangup_all_yate_calls(yate)
+
     await z.sleep(1000) // wait a little because connection.subscribe() needs to complete
 
     const domain = 'test1.com'

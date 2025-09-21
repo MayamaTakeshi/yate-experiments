@@ -6,7 +6,7 @@ This repo documents our experiments with Yate (Yet Another Telephony Engine)
 
 We use a Dockerfile to build a docker image containing yate, sngrep2, node.js and sipp.
 
-The experiments are a few tests (using node.js) controlling yate via [next-yate](https://github.com/0LEG0/next-yate).
+The experiments are a few tests (using node.js) controlling yate via [next-yate](https://github.com/0LEG0/next-yate) or via ([yate-extmodule](https://github.com/latysheff/node-yate-extmodule)
 
 I recommend you to follow [learning-freeswitch](https://github.com/MayamaTakeshi/learning-freeswitch) before experimenting with this.
 
