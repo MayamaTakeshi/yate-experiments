@@ -70,6 +70,7 @@ sed -i 's|^PROGS := cdrbuild.yate|PROGS := faxchan.yate cdrbuild.yate|' modules/
 
 make
 make install-noapi
+ldconfig
 
 # move conf.d as we will mount our own
 mv conf.d conf.d.original
