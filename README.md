@@ -380,18 +380,24 @@ However, for simple programming tasks we can just use the extmodule interface wh
 This way, you can write apps in any language you like: 
 
 node.js:
+
   https://github.com/0LEG0/next-yate/tree/master?tab=readme-ov-file#featured-ivr-example-using-yatechannel
 
 python:
+
   https://github.com/eventphone/python-yate/tree/master/examples
 
-golaing:
+golang:
+
   https://github.com/lonli078/go-yate
+
   https://github.com/rukavina/yatego
 
-The yate protocol is text-based and very simple: https://docs.yate.ro/wiki/External_module_command_flow
+The yate protocol is text-based and very simple: 
 
-So you could easily write a yate protocol module for your favorite language.
+https://docs.yate.ro/wiki/External_module_command_flow
+
+So you could easily write a yate protocol module for your favorite language (or ask some LLM to do it for you).
 
 ## Findings
 
