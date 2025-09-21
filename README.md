@@ -84,7 +84,7 @@ There is also option -f which permits to run the tests starting from a specific 
 
 Obs:currently, test subscribe_notify.js is failing (see https://github.com/MayamaTakeshi/yate-experiments/issues/2)
 
-Quick description of the test scriipts:
+Quick description of the test scripts:
 
 - echo_test.js: shows how to concatenate a list of media commands using next-yate facilities.
 - handling.call.route.js: show how to watch for 'call.route' msg to wait for incoming call and send the call to another sip endpoint.
@@ -104,9 +104,9 @@ The module regex route is used to determine how a call should be handled.
 
 It is configuration is at: /usr/local/src/git/yate/conf.d/regexroute.conf 
 
-In it you can see a list of destination number that will just generate tones:
+In it you can see a list of destination number for tests:
 ```
-MayamaTakeshi@takeshi-desktop:yate$ grep 9999 conf.d/regexroute.conf 
+$ grep 9999 conf.d/regexroute.conf 
 ^99991001$=tone/dial
 ^99991002$=tone/busy
 ^99991003$=tone/ring
@@ -116,6 +116,8 @@ MayamaTakeshi@takeshi-desktop:yate$ grep 9999 conf.d/regexroute.conf
 ^99991007$=tone/milliwatt
 ^99991008$=tone/info
 ^99991010$=wave/play//usr/local/src/git/yate/media/hello_good_morning.mulaw
+^99991011$=fax/transmit//usr/local/src/git/yate/media/sample.tiff
+^99991012$=fax/receive//tmp/received.tiff
 ```
 
 In my ~/.baresip/accounts I have:
