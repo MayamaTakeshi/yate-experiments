@@ -85,7 +85,7 @@ async function test() {
 
     chan.init()
       .then(msg => console.log("Channel", msg.id, "initialized"))
-      .then(msg => chan.callTo('wave/play//usr/local/src/git/yate/audio/dtmf.123.mulaw') )
+      .then(msg => chan.callTo('wave/play//usr/local/src/git/yate/media/dtmf.123.mulaw') )
       .then(msg => console.log("Channel", msg.id, "play file played"))
       .then(msg => chan.callTo('wave/record//tmp/recording.mulaw',{"maxlen": 40000}))
       .then(msg => console.log("Channel", msg.id, "recording finished"))
@@ -138,7 +138,7 @@ async function test() {
     // we need to play something because sip-lab doesn't send RTP if tnere is no media active
     // and yate wave/record only write to file what it receives so if i doesn't receving something
     // it will take time to reach the maxlen (maxlen is number of bytes, not duration)
-    sip.call.start_play_wav(oc.id, {file: '../../audio/hello_good_morning.wav'})
+    sip.call.start_play_wav(oc.id, {file: '../../media/hello_good_morning.wav'})
 
     // here we start inband DTMF detection at the oc side
     sip.call.start_inband_dtmf_detection(oc.id)

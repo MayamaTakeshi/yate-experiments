@@ -89,7 +89,7 @@ async function test() {
     console.log('after  await chan.init()')
 
     // We instruct yate to route the call to wave module
-    chan.callTo('wave/play//usr/local/src/git/yate/audio/dtmf.123.mulaw')
+    chan.callTo('wave/play//usr/local/src/git/yate/media/dtmf.123.mulaw')
     .then(msg => {
         z.push_event({
             event: 'callTo.completed',
@@ -159,7 +159,7 @@ async function test() {
         },
     ], 3000)
 
-    chan.callTo('wave/play//usr/local/src/git/yate/audio/dtmf.456.mulaw')
+    chan.callTo('wave/play//usr/local/src/git/yate/media/dtmf.456.mulaw')
     .then(msg => {
         z.push_event({
             event: 'callTo.completed',

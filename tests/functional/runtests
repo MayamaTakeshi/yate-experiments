@@ -1,52 +1,117 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
-tests=($(ls *.js | sort))
+show_help() {
+    cat <<EOF
+Usage: $0 [options]
+
+Options:
+  -r, --report        Run all tests and report results (default is stop on first failure)
+  -f, --from <file>   Start running tests from the specified file
+  -h, --help          Show this help message and exit
+
+Examples:
+  $0                 # run tests, stop on first failure
+  $0 -r              # run all tests and show summary
+  $0 -f test2.js     # start running from test2.js, stop on first failure
+  $0 -r -f test2.js  # run all tests starting from test2.js and show summary
+EOF
+}
+
+# parse options with getopt (GNU getopt)
+TEMP=$(getopt -o rf:h -l report,from:,help -n "$0" -- "$@") || {
+    show_help
+    exit 2
+}
+eval set -- "$TEMP"
+
+report_mode=false
+start_from=""
+
+while true; do
+    case "$1" in
+        -r|--report) report_mode=true; shift ;;
+        -f|--from)   start_from="$2"; shift 2 ;;
+        -h|--help)   show_help; exit 0 ;;
+        --) shift; break ;;
+        *) echo "Internal getopt error"; exit 3 ;;
+    esac
+done
+
+# collect tests safely
+shopt -s nullglob
+tests=( *.js )
+shopt -u nullglob
+
+if [[ ${#tests[@]} -eq 0 ]]; then
+    echo "No *.js tests found in $(pwd)"
+    exit 0
+fi
+
+# sort tests (preserve filenames with spaces)
+IFS=$'\n' tests=( $(printf "%s\n" "${tests[@]}" | sort) )
+unset IFS
+
+# if -f given, trim the list to start at that file
+if [[ -n $start_from ]]; then
+    found=false
+    new_tests=()
+    for t in "${tests[@]}"; do
+        if [[ $t == "$start_from" ]]; then
+            found=true
+        fi
+        if [[ $found == true ]]; then
+            new_tests+=("$t")
+        fi
+    done
+    if [[ $found != true ]]; then
+        echo "Error: test '$start_from' not found. Available tests:"
+        for t in "${tests[@]}"; do echo "  $t"; done
+        exit 1
+    fi
+    tests=("${new_tests[@]}")
+fi
 
 successful=()
-
 failed=()
 
-for i in "${tests[@]}"
-do
+for t in "${tests[@]}"; do
     sleep 0.2
-    node $i
-    if [[ $? -ne 0 ]]
-    then
-        echo "$i failed"
-        failed+=($i)
+    if node "$t"; then
+        successful+=("$t")
     else
-        successful+=($i)
+        echo "$t failed"
+        failed+=("$t")
+        # stop on first failure unless report_mode is enabled
+        if [[ $report_mode != true ]]; then
+            echo
+            echo "Stopped on first failure."
+            exit 1
+        fi
     fi
 done
 
 echo
-
-if [[ ${#failed[@]} -eq 0 ]]
-then
-    echo "Finished. All test passed:"
+if [[ ${#failed[@]} -eq 0 ]]; then
+    echo "Finished. All tests passed:"
 else
     echo "Finished:"
 fi
 
 echo
-
 echo "Successful tests:"
-
-for i in "${successful[@]}"
-do
+for i in "${successful[@]}"; do
     echo "  - $i"
 done
 
-echo
-
-if [[ ${#failed[@]} -ne 0 ]]
-then
+if [[ ${#failed[@]} -ne 0 ]]; then
+    echo
     echo "Failed tests:"
-
-    for i in "${failed[@]}"
-    do
+    for i in "${failed[@]}"; do
         echo "  - $i"
     done
-
     echo
+    exit 1
 fi
+
+exit 0
+

@@ -333,3 +333,19 @@ alive in yate after a failed test).
 
 - The experiments (tests/functional/*.js files) likely are watching all messages for all calls in the system. Since this is for testing and learning, this is OK. But in a production system we would not use this and
 more likely would ask yate to restrict notification for specific channels we are handling in the script.
+
+## Findings
+
+- while load testing with sipp, the test was terminated without sending BYE to the calls and these calls stayed in the 'status cdrbuild' output. 
+So these are dead calls. The sipp scenarios don't use session timers and so probably these callwill stay in yate memory forever.
+This might not happen in prod as we probably have session timers there but this is not critical because we can just remove such calls periodicaly using msg 'call.drop'.
+
+- Not tested yet but it seems we can drop calls using the telnet connection as its help shows: drop {chan|*|all} [reason]
+
+- It seems it supports MRCP:
+```
+2025-09-21_07:44:59.467847 <ALL> Plugin::Plugin("mrcp",false) [0x75340b37d280]
+2025-09-21_07:44:59.467862 Loaded module MRCP
+```
+
+

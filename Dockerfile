@@ -33,6 +33,24 @@ ln -s `pwd`/src/sngrep /usr/local/bin/sngrep2
 
 EOF
 
+RUN apt install -y libc-bin # for ldconfig
+
+# install specific version of lib spandsp required by yate
+RUN <<EOF
+set -o errexit
+set -o nounset
+
+cd /usr/local/src/
+wget https://www.soft-switch.org/downloads/spandsp/old/spandsp-0.0.6pre3.tgz
+tar xf spandsp-0.0.6pre3.tgz 
+cd spandsp-0.0.6
+./configure 
+make
+make install
+
+/sbin/ldconfig
+EOF
+
 # install yate
 RUN <<EOF
 set -o errexit
@@ -46,8 +64,15 @@ git checkout 1647cdc467274b293c040d5b4d8880cea2b18072
 
 ./autogen.sh 
 ./configure
+
+# enable build of faxchan.yate
+sed -i 's|^PROGS := cdrbuild.yate|PROGS := faxchan.yate cdrbuild.yate|' modules/Makefile.in 
+
 make
 make install-noapi
+
+# move conf.d as we will mount our own
+mv conf.d conf.d.original
 EOF
 
 ARG user_name

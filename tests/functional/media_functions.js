@@ -88,7 +88,7 @@ async function test() {
     await chan.init()
 
     // We instruct yate to route the call to wave module
-    chan.callTo('wave/play//usr/local/src/git/yate/audio/dtmf.123.mulaw')
+    chan.callTo('wave/play//usr/local/src/git/yate/media/dtmf.123.mulaw')
 
     await z.wait([
         {
@@ -161,7 +161,7 @@ async function test() {
     delete z.store.resolve
 
     // We instruct yate to send the call to wave module to play another file
-    chan.callTo('wave/play//usr/local/src/git/yate/audio/dtmf.456.mulaw')
+    chan.callTo('wave/play//usr/local/src/git/yate/media/dtmf.456.mulaw')
 
     // then we wait for the dtmf event
     await z.wait([
