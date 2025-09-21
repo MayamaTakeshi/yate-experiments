@@ -10,7 +10,9 @@ The experiments are a few tests (using node.js) controlling yate via [next-yate]
 
 I recommend you to follow [learning-freeswitch](https://github.com/MayamaTakeshi/learning-freeswitch) before experimenting with this.
 
-You might also like to take a look at: https://docs.yate.ro/wiki/Main_Page
+You might also like to take a look at: https://docs.yate.ro/wiki/Beginners_in_Yate
+
+(the information is outdated but the basics didn't change).
 
 ## Build the image
 ```
