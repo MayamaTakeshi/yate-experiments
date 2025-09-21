@@ -43,13 +43,12 @@ Also, switch to the window 'yate' and inspect its logs.
 
 To run all tests do:
 ```
-./runtests
+./runtests -r
 ```
 Sample execution:
 ```
-MayamaTakeshi@takeshi-desktop:functional$ ./runtests 
+MayamaTakeshi@takeshi-desktop:functional$ ./runtests -r
 ... ABRIDGED ...
-
 wait (subscribe_notify.js:170) timed out
 subscribe_notify.js failed
 
@@ -61,13 +60,28 @@ Successful tests:
   - media_functions.js
   - media_functions_with_callto_callbacks.js
   - outgoing_call.js
+  - receive_fax.js
   - register_and_invite.js
+  - send_fax.js
 
 Failed tests:
   - subscribe_notify.js
 
 MayamaTakeshi@takeshi-desktop:functional$ 
 ```
+The '-r' option mean to run in report mode (run all tests and report the results).
+
+But during work, you might want to stop at the first error. 
+
+For this, just use:
+```
+./runtests
+```
+There is also option -f which permits to run the tests starting from a specific one:
+```
+./runtests -f outgoing_call.js
+```
+
 Obs:currently, test subscribe_notify.js is failing (see https://github.com/MayamaTakeshi/yate-experiments/issues/2)
 
 Quick description of the test scriipts:
@@ -77,7 +91,9 @@ Quick description of the test scriipts:
 - media_functions.js: shows how to handle media events step-by-step instead of concatenating all media commands (counter-example of echo_test.js).
 - media_functions_with_callto_callbacks.js: similar to media_functions.js but pushing events from next_wait callTo callbacks.
 - outgoing_call.js: shows how to originate an outgoing call from within yate (for example, for click2call implementation).
+- receive_fax.js: receives a fax from yate.
 - register_and_invite.js: shows how to SIP REGISTER a SIP UA and make a call to it
+- send_fax.js: sends a fax to yate.
 - subscribe_notify.js: (not working). it was suppose to show how to do a SIP SUBSCRIBE and get a SIP NOTIFY from yate.
 
 ## Testing with baresip
@@ -99,7 +115,7 @@ MayamaTakeshi@takeshi-desktop:yate$ grep 9999 conf.d/regexroute.conf
 ^99991006$=tone/outoforder
 ^99991007$=tone/milliwatt
 ^99991008$=tone/info
-^99991010$=wave/play//usr/local/src/git/yate/audio/hello_good_morning.mulaw
+^99991010$=wave/play//usr/local/src/git/yate/media/hello_good_morning.mulaw
 ```
 
 In my ~/.baresip/accounts I have:
@@ -115,7 +131,7 @@ You can also call '12345678' and the call will be handled by this javascript fil
 ```
 MayamaTakeshi@takeshi-desktop:yate$ cat scripts/hello.js 
 if (message.called == "12345678") {
-    Channel.callTo("wave/play//usr/local/src/git/yate/audio/hello_good_morning.mulaw");
+    Channel.callTo("wave/play//usr/local/src/git/yate/media/hello_good_morning.mulaw");
     Channel.callTo("wave/record//tmp/recording.mulaw",{"maxlen": 80000, "blocking": 1}); // attention maxlen is not duration! It is max number of bytes to be written to file.
     Channel.callTo("wave/play//tmp/recording.mulaw");
 }
@@ -143,7 +159,7 @@ Do not use code like this:
 if(message.called != '12345678') {
   return
 }
-Channel.callTo("wave/play//usr/local/src/git/yate/audio/hello_good_morning.mulaw");
+Channel.callTo("wave/play//usr/local/src/git/yate/media/hello_good_morning.mulaw");
 ```
 
 The above will not work. I don't know why.
@@ -151,7 +167,7 @@ The above will not work. I don't know why.
 Instead, do:
 ```
 if(message.called == '12345678') {
-  Channel.callTo("wave/play//usr/local/src/git/yate/audio/hello_good_morning.mulaw");
+  Channel.callTo("wave/play//usr/local/src/git/yate/median/hello_good_morning.mulaw");
 }
 ```
 
