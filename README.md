@@ -170,9 +170,11 @@ In our case, the next module will be regexroute and so it will handle 99991001 e
 
 ## Yate Javascript
 
-The javascript interpreter is very old. You cannot use modern things like `${somevar}` with.
-
-And xpression must always end with ';'.
+The javascript interpreter is very old. You cannot use modern things like
+```
+var s = `this is ${somevar}`
+```
+And expression must always end with ';'.
 
 Check the yate output for things like this indicating errors:
 ```
