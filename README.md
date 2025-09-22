@@ -166,26 +166,11 @@ In our case, the next module will be regexroute and so it will handle 99991001 e
 
 ## Yate Javascript
 
-### Some gotchas
+The javascript interpreter is very old. You cannot use modern things like `${somevar}` with.
 
-Do not use code like this:
-```
-if(message.called != '12345678') {
-  return
-}
-Channel.callTo("wave/play//usr/local/src/git/yate/media/hello_good_morning.mulaw");
-```
+And xpression must always end with ';'.
 
-The above will not work. I don't know why.
-
-Instead, do:
-```
-if(message.called == '12345678') {
-  Channel.callTo("wave/play//usr/local/src/git/yate/median/hello_good_morning.mulaw");
-}
-```
-
-Also, check the yate output for things like this indicating errors:
+Check the yate output for things like this indicating errors:
 ```
 2025-09-22_08:40:37.085364 Initializing module Javascript
 2025-09-22_08:40:37.085607 <javascript:WARN> Failed to parse script: /usr/local/src/git/yate/scripts/routing.js
