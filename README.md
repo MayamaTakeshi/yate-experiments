@@ -2,15 +2,15 @@
 
 ## Overview
 
-This repo documents our experiments with Yate (Yet Another Telephony Engine)
+This repo documents our experiments with Yate (Yet Another Telephony Engine).
 
 We use a Dockerfile to build a docker image containing yate, sngrep2, node.js and sipp.
 
-The experiments are a few tests (using node.js) controlling yate via [next-yate](https://github.com/0LEG0/next-yate) or via ([yate-extmodule](https://github.com/latysheff/node-yate-extmodule)
+The experiments are a few tests (using node.js) controlling yate via [next-yate](https://github.com/0LEG0/next-yate) or via [yate-extmodule](https://github.com/latysheff/node-yate-extmodule)
 
 I recommend you to follow [learning-freeswitch](https://github.com/MayamaTakeshi/learning-freeswitch) before experimenting with this.
 
-You might also like to take a look at: https://docs.yate.ro/wiki/Beginners_in_Yate
+You might also want to take a look at: https://docs.yate.ro/wiki/Beginners_in_Yate
 
 (the information is outdated but the basics didn't change).
 
@@ -36,7 +36,7 @@ You will yave the following windows:
   - tests: bash opened at the tests/functional folder
   - rmanager: telnet connected to yate to permit to send commands to it (https://docs.yate.ro/wiki/Rmanager)
 
-To simplify and focus on our interests, we will have only the modules regexroute, extmodule and javascript enabled.
+To simplify and focus on our interests, we will have only the modules regexroute, extmodule, faxchan and javascript enabled.
 
 ## Running tests
 
