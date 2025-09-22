@@ -139,11 +139,15 @@ baresip -e 'dsip:99991008@0.0.0.0:5060'
 
 You can also call '12345678' and the call will be handled by this javascript file:
 ```
-MayamaTakeshi@takeshi-desktop:yate$ cat scripts/hello.js 
+takeshi@takeshi-desktop:yate-experiments$ cat scripts/routing.js 
 if (message.called == "12345678") {
     Channel.callTo("wave/play//usr/local/src/git/yate/media/hello_good_morning.mulaw");
-    Channel.callTo("wave/record//tmp/recording.mulaw",{"maxlen": 80000, "blocking": 1}); // attention maxlen is not duration! It is max number of bytes to be written to file.
-    Channel.callTo("wave/play//tmp/recording.mulaw");
+    Channel.callTo("wave/record//tmp/recording." + message.billid + ".mulaw",{"maxlen": 80000}); // attention maxlen is not duration! It is max number of bytes to be written to file.
+    Channel.callTo("wave/play//tmp/recording." + message.billid + ".mulaw");
+} else if (message.called == "11112222") {
+    Channel.callTo("wave/play//usr/local/src/git/yate/media/hello_good_morning.mulaw");
+} else if (message.called == "33334444") {
+    Channel.callTo("sip/sip:33334444@127.0.0.1:5070");
 }
 ```
 This is done this way:
