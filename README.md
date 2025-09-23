@@ -396,6 +396,155 @@ https://docs.yate.ro/wiki/External_module_command_flow
 
 So you could easily write a yate protocol module for your favorite language (or ask some LLM to do it for you).
 
+## Deployment
+
+Do:
+```
+mkdir /var/run
+mkdir /var/log/yate
+```
+
+Then use this as /etc/init.d/yate:
+
+```
+#!/bin/sh
+
+### BEGIN INIT INFO
+# Provides:          yate
+# Required-Start:    $local_fs $network $syslog
+# Required-Stop:     $local_fs $network $syslog
+# Default-Start:     2 3 4 5
+# Default-Stop:      0 1 6
+# Short-Description: Start and stop the yate daemon
+# Description:       YATE is a powerful and flexible telephony engine.
+### END INIT INFO
+
+# Path to the yate executable
+YATE_BIN="/usr/local/bin/yate"
+
+# The user to run the daemon as (optional, set if needed)
+# YATE_USER="yate"
+
+# Full command-line arguments for yate
+YATE_OPTS="-d -s -r -l /var/log/yate/yate.log -p /var/run/yate.pid"
+
+# PID file path
+YATE_PID="/var/run/yate.pid"
+
+# Log file path
+YATE_LOG="/var/log/yate/yate.log"
+
+# A function that returns the PID of the running process
+get_pid() {
+    if [ -f "$YATE_PID" ]; then
+        echo $(cat "$YATE_PID")
+    fi
+}
+
+# The start function
+start() {
+    echo -n "Starting YATE: "
+    if [ -f "$YATE_PID" ] && kill -0 $(get_pid) 2>/dev/null; then
+        echo "already running."
+        return 1
+    fi
+
+    # Create the log directory if it doesn't exist
+    mkdir -p $(dirname "$YATE_LOG")
+
+    # Change to the correct user if specified
+    # if [ -n "$YATE_USER" ]; then
+    #     su -s /bin/sh -c "$YATE_BIN $YATE_OPTS" "$YATE_USER"
+    # else
+        $YATE_BIN $YATE_OPTS
+    # fi
+    
+    RETVAL=$?
+    if [ $RETVAL -eq 0 ]; then
+        echo "OK"
+    else
+        echo "failed"
+    fi
+    return $RETVAL
+}
+
+# The stop function
+stop() {
+    echo -n "Stopping YATE: "
+    local pid=$(get_pid)
+    if [ -z "$pid" ]; then
+        echo "not running."
+        return 1
+    fi
+
+    kill $pid 2>/dev/null
+    RETVAL=$?
+    if [ $RETVAL -eq 0 ]; then
+        # Wait for the process to die
+        while [ -e /proc/$pid ]; do sleep 0.1; done
+        rm -f "$YATE_PID"
+        echo "OK"
+    else
+        echo "failed"
+    fi
+    return $RETVAL
+}
+
+# The status function
+status() {
+    if [ -f "$YATE_PID" ] && kill -0 $(get_pid) 2>/dev/null; then
+        echo "YATE is running with PID: $(get_pid)"
+        return 0
+    else
+        echo "YATE is not running."
+        return 1
+    fi
+}
+
+# The restart function
+restart() {
+    stop
+    start
+}
+
+# Main script logic
+case "$1" in
+    start)
+        start
+        ;;
+    stop)
+        stop
+        ;;
+    restart)
+        restart
+        ;;
+    status)
+        status
+        ;;
+    *)
+        echo "Usage: $0 {start|stop|restart|status}"
+        exit 1
+        ;;
+esac
+
+exit 0
+```
+For log rotation use this /etc/logrotate.d/yate:
+```
+/var/log/yate/yate.log {
+    daily
+    missingok
+    rotate 7
+    compress
+    delaycompress
+    notifempty
+    create 0640 root root
+    postrotate
+        /bin/kill -HUP `cat /var/run/yate.pid 2>/dev/null` 2> /dev/null || true
+    endscript
+}
+```
+
 ## Findings
 
 ### Dead calls

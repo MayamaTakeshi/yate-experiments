@@ -613,3 +613,49 @@ Here is the list of some important functions provided by the RTPTransmitter clas
 You can use an RTPTransmitter object to send an RTP media stream and send audio or video frames to the stream in a Yate module.
 
 --------------------------------------------------
+2025/09/23 takeshi:
+
+We tried to install yate as a service under systemd.
+
+Initially, We tried with:
+
+```
+ExecStart=/usr/local/bin/yate -d -s -r -l /var/log/yate/yate.log -p /var/run/yate.pid 
+```
+However, to run under systemd, the app should not daemonize itself so we changed it to:
+```
+/usr/local/bin/yate -s -r -l /var/log/yate/yate.log -p /var/run/yate.pid 
+```
+
+But when we use it this way under systemd, when we do log rotation ("logrotate -f /etc/logrotate.d/yate") defined in:
+
+```
+[root@IPX219 yate_server 09:02:25]# cat /etc/logrotate.d/yate 
+/var/log/yate/yate.log {
+    daily
+    missingok
+    rotate 7
+    compress
+    delaycompress
+    notifempty
+    create 0640 root root
+    postrotate
+        /bin/kill -HUP `cat /var/run/yate.pid 2>/dev/null` 2> /dev/null || true
+    endscript
+}
+```
+
+yate dies.
+
+But this was a mistake: using option -s causes a supervisor process to be started. This supervisor will start and monitor a child process (the actual yate engine),
+so that if the child dies, it will restart it.
+
+So instead, under systemd, do not use option -s nor -d (daemonize) as systemd requires apps to run in the foreground.
+
+Then according to gemini:
+
+Use logrotate copytruncate (The easy but less efficient method): This is the simplest way to handle log rotation without restarting your service. Instead of renaming the log file, logrotate makes a copy and then truncates the original file to zero bytes. Your service continues to write to the same file handle without interruption
+
+Also, another alternative is to put the app under control of pm2 that then logrotates app output (app doesn't write to files). 
+
+In our case, we decided to use /etc/init.d/yate to start/stop the supervisor (see README.md)
