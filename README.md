@@ -30,7 +30,7 @@ Inside the container do:
 ```
 The above will start a tmux session as specified in tmux_session.yml.
 
-You will yave the following windows:
+You will have the following windows:
   - yate: yate running and outputting logs
   - sngrep2: sip msg flow visualizer
   - tests: bash opened at the tests/functional folder
@@ -97,7 +97,7 @@ Quick description of the test scripts:
 - echo_test.js: shows how to concatenate a list of media commands using next-yate facilities.
 - handling.call.route.js: shows how to watch for 'call.route' msg to wait for incoming call and send the call to another sip endpoint.
 - media_functions.js: shows how to handle media events step-by-step instead of concatenating all media commands (counter-example of echo_test.js).
-- media_functions_with_callto_callbacks.js: similar to media_functions.js but pushing events from next_wait callTo callbacks.
+- media_functions_with_callto_callbacks.js: similar to media_functions.js but pushing events from next-yate callTo callbacks.
 - outgoing_call.js: shows how to originate an outgoing call from within yate (for example, for click2call implementation).
 - receive_fax.js: receives a fax from yate.
 - register_and_invite.js: shows how to SIP REGISTER a SIP UA and make a call to it
